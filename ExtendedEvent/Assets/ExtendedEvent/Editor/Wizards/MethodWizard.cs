@@ -27,7 +27,7 @@ public class MethodWizard : ScriptableWizard {
             size = Property.arraySize;
         } catch ( System.NullReferenceException ) {
             ended = true;
-            EditorGUILayout.HelpBox( "Focus on my parent window has been lost, please close me", MessageType.Error );
+            EditorGUILayout.HelpBox( "My parent window has lost focus, please close me", MessageType.Error );
             return;
         }        
 

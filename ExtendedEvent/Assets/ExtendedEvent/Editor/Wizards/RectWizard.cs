@@ -14,7 +14,7 @@ public class RectWizard : FieldWizard {
             Property.stringValue = EditorGUILayout.RectField( Rect( Property.stringValue ) ).ToString();
         } catch ( System.NullReferenceException ) {
             ended = true;
-            EditorGUILayout.HelpBox( "Focus on my parent window has been lost, please close me", MessageType.Error );
+            EditorGUILayout.HelpBox( "My parent window has lost focus, please close me", MessageType.Error );
             return;
         }
     }
