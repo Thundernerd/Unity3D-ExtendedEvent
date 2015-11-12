@@ -93,10 +93,6 @@ public class ExtendedEvent {
             var a = System.Reflection.Assembly.Load( Assembly );
             var t = a.GetType( Type );
 
-            var component = item.GetComponent( parentName );
-            var componentType = component.GetType();
-            var field = componentType.GetField( Name );
-
             object value = null;
 
             if ( t == typeof( int ) ) {
@@ -133,7 +129,16 @@ public class ExtendedEvent {
                 value = Object;
             }
 
-            field.SetValue( component, value );
+            if ( parentName == "GameObject" ) {
+                var type = typeof( GameObject );
+                var field = type.GetField( Name );
+                field.SetValue( item, value );
+            } else {
+                var component = item.GetComponent( parentName );
+                var componentType = component.GetType();
+                var field = componentType.GetField( Name );
+                field.SetValue( component, value );
+            }
         }
 
         public override string ToString() {
@@ -179,10 +184,6 @@ public class ExtendedEvent {
             var a = System.Reflection.Assembly.Load( Assembly );
             var t = a.GetType( Type );
 
-            var component = item.GetComponent( parentName );
-            var componentType = component.GetType();
-            var field = componentType.GetProperty( Name );
-
             object value = null;
 
             if ( t == typeof( int ) ) {
@@ -219,7 +220,16 @@ public class ExtendedEvent {
                 value = Object;
             }
 
-            field.SetValue( component, value, null );
+            if ( parentName == "GameObject" ) {
+                var type = typeof( GameObject );
+                var field = type.GetProperty( Name, BindingFlags.Instance | BindingFlags.Public );
+                field.SetValue( item, value, null );
+            } else {
+                var component = item.GetComponent( parentName );
+                var componentType = component.GetType();
+                var field = componentType.GetProperty( Name );
+                field.SetValue( component, value, null );
+            }
         }
 
         public override string ToString() {
@@ -288,9 +298,6 @@ public class ExtendedEvent {
         }
 
         public void Invoke( GameObject item ) {
-            var component = item.GetComponent( parentName );
-            var componentType = component.GetType();
-
             var parameters = new object[Parameters.Count];
             for ( int i = 0; i < Parameters.Count; i++ ) {
                 var p = Parameters[i];
@@ -333,9 +340,17 @@ public class ExtendedEvent {
             }
 
             var mTypes = parameters.Select( p => p.GetType() );
-            var method = componentType.GetMethod( Name, mTypes.ToArray() );
 
-            method.Invoke( component, parameters );
+            if ( parentName == "GameObject" ) {
+                var type = typeof( GameObject );
+                var method = type.GetMethod( Name, mTypes.ToArray() );
+                method.Invoke( item, parameters );
+            } else {
+                var component = item.GetComponent( parentName );
+                var componentType = component.GetType();
+                var method = componentType.GetMethod( Name, mTypes.ToArray() );
+                method.Invoke( component, parameters );
+            }
         }
 
         public override string ToString() {
@@ -373,6 +388,9 @@ public class ExtendedEvent {
         }
 
         public void Reset() {
+            var obsoleteType = typeof( ObsoleteAttribute );
+            var objectType = typeof( UnityEngine.Object );
+
             Fields.Clear();
             Properties.Clear();
             Methods.Clear();
@@ -387,43 +405,104 @@ public class ExtendedEvent {
             if ( GameObject == null ) return;
 
             var tempList = new List<string>();
+            var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+
+            {
+                // "Force add" GameObject item
+                var gType = typeof( GameObject );
+                var gFields = gType.GetFields( flags ).Where( m => m.GetCustomAttributes( obsoleteType, false ).Length == 0 ).ToList();
+                var gProperties = gType.GetProperties( flags ).Where( p => p.GetCustomAttributes( obsoleteType, false ).Length == 0 && p.CanWrite ).ToList();
+                var gMethods = gType.GetMethods( flags ).Where( m => m.GetCustomAttributes( obsoleteType, false ).Length == 0 &&
+                                                                !m.Name.StartsWith( "get_" ) && !m.Name.StartsWith( "set_" ) && !m.ContainsGenericParameters &&
+                                                                !m.IsAbstract && !m.IsConstructor && !m.IsGenericMethod && !m.IsGenericMethodDefinition && !m.IsVirtual ).ToList();
+                //{
+                //    var t = typeof( Behaviour );
+                //    var temp = t.GetProperties( flags ).Where( p => p.GetCustomAttributes( obsoleteType, false ).Length == 0 && p.CanWrite ).ToList();
+                //    gProperties.AddRange( temp );
+                //}
+
+                // Filter methods for properties that we can't handle
+                for ( int i = gMethods.Count - 1; i >= 0; i-- ) {
+                    var pars = gMethods[i].GetParameters();
+                    foreach ( var p in pars ) {
+                        if ( p.ParameterType.IsGenericParameter ||
+                                p.ParameterType.IsGenericType ||
+                                p.ParameterType.IsGenericTypeDefinition ||
+                                p.ParameterType.IsArray ||
+                                ( !p.ParameterType.IsValueType && !p.ParameterType.IsSubclassOf( objectType ) && p.ParameterType.Name.ToLower() != "string" ) ) {
+                            gMethods.RemoveAt( i );
+                            break;
+                        }
+                    }
+                }
+
+                gFields.Sort( ( f1, f2 ) => f1.Name.CompareTo( f2.Name ) );
+                gProperties.Sort( ( p1, p2 ) => p1.Name.CompareTo( p2.Name ) );
+                gMethods.Sort( ( m1, m2 ) => m1.Name.CompareTo( m2.Name ) );
+
+                foreach ( var f in gFields ) {
+                    var field = new Field( f, gType );
+                    Indeces.Add( Fields.Count );
+                    tempList.Add( field.ToString() );
+                    Fields.Add( field );
+                }
+
+                foreach ( var p in gProperties ) {
+                    var property = new Property( p, gType );
+                    Indeces.Add( Properties.Count );
+                    tempList.Add( property.ToString() );
+                    Properties.Add( property );
+                }
+
+                foreach ( var m in gMethods ) {
+                    var method = new Method( m, gType );
+                    Indeces.Add( Methods.Count );
+                    tempList.Add( method.ToString() );
+                    Methods.Add( method );
+                }
+            }
+
 
             var components = GameObject.GetComponents<Component>();
-            var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             foreach ( var cmp in components ) {
                 var type = cmp.GetType();
 
-                var fields = type.GetFields( flags ).ToList();
-                fields.Sort( ( f1, f2 ) => f1.Name.CompareTo( f2.Name ) );
+                var fields = type.GetFields( flags ).Where( m => m.GetCustomAttributes( obsoleteType, false ).Length == 0 ).ToList();
+                var properties = type.GetProperties( flags ).Where( p => p.GetCustomAttributes( obsoleteType, false ).Length == 0 && p.CanWrite ).ToList();
+                var methods = type.GetMethods( flags ).Where( m => m.GetCustomAttributes( obsoleteType, false ).Length == 0 &&
+                                            !m.Name.StartsWith( "get_" ) && !m.Name.StartsWith( "set_" ) && !m.ContainsGenericParameters &&
+                                            !m.IsAbstract && !m.IsConstructor && !m.IsGenericMethod && !m.IsGenericMethodDefinition && !m.IsVirtual ).ToList();
 
-                var properties = type.GetProperties( flags ).Where( p => p.CanWrite ).ToList();
+
+                // Add extra properties from subclasses
                 if ( type.IsSubclassOf( typeof( Behaviour ) ) ) {
                     var t = typeof( Behaviour );
-                    var temp = t.GetProperties( flags ).Where( p => p.CanWrite ).ToList();
+                    var temp = t.GetProperties( flags ).Where( p => p.GetCustomAttributes( obsoleteType, false ).Length == 0 && p.CanWrite ).ToList();
                     properties.AddRange( temp );
                 }
                 {   // Bracketing it for no good reason
                     var t = typeof( Component );
-                    var temp = t.GetProperties( flags ).Where( p => p.CanWrite ).ToList();
+                    var temp = t.GetProperties( flags ).Where( p => p.GetCustomAttributes( obsoleteType, false ).Length == 0 && p.CanWrite ).ToList();
                     properties.AddRange( temp );
                 }
-                properties.Sort( ( p1, p2 ) => p1.Name.CompareTo( p2.Name ) );
 
-                var methods = type.GetMethods( flags ).Where( m =>
-                   !m.Name.StartsWith( "set_" ) && !m.Name.StartsWith( "get_" ) &&
-                   !m.ContainsGenericParameters && !m.IsGenericMethod && !m.IsGenericMethodDefinition &&
-                   !m.IsConstructor && !m.IsAbstract ).ToList();
-
+                // Filter methods for properties that we can't handle
                 for ( int i = methods.Count - 1; i >= 0; i-- ) {
                     var pars = methods[i].GetParameters();
                     foreach ( var p in pars ) {
-                        if ( p.ParameterType.IsGenericParameter || p.ParameterType.IsGenericType || p.ParameterType.IsGenericTypeDefinition ||
-                            p.ParameterType.IsArray ) {
+                        if ( p.ParameterType.IsGenericParameter ||
+                                p.ParameterType.IsGenericType ||
+                                p.ParameterType.IsGenericTypeDefinition ||
+                                p.ParameterType.IsArray ||
+                                ( !p.ParameterType.IsValueType && !p.ParameterType.IsSubclassOf( objectType ) && p.ParameterType.Name.ToLower() != "string" ) ) {
                             methods.RemoveAt( i );
                             break;
                         }
                     }
                 }
+
+                fields.Sort( ( f1, f2 ) => f1.Name.CompareTo( f2.Name ) );
+                properties.Sort( ( p1, p2 ) => p1.Name.CompareTo( p2.Name ) );
                 methods.Sort( ( m1, m2 ) => m1.Name.CompareTo( m2.Name ) );
 
                 foreach ( var f in fields ) {
