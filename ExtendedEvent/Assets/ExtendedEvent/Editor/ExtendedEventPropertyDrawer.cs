@@ -88,7 +88,13 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
 
     private void DrawElementInternal( Rect rect, int index, bool isActive, bool isFocused ) {
         var list = GetObjectsList();
-        var property = list[index];
+        SerializedProperty property;
+        try {
+            property = list[index];
+        } catch ( ArgumentOutOfRangeException ) {
+            rList.list.Clear();
+            return;
+        }
 
         rect.yMin += 3f;
         rect.yMax -= 7f;
