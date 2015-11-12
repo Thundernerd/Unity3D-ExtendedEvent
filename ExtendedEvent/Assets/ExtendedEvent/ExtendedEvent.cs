@@ -372,7 +372,7 @@ public class ExtendedEvent {
         public List<Property> Properties = new List<Property>();
         public List<Method> Methods = new List<Method>();
 
-        public string[] List = { "Nothing", "" };
+        public string[] List = { "Nothing Selected", "" };
         public List<int> Indeces = new List<int>();
         public int Index = 0;
 
@@ -401,7 +401,7 @@ public class ExtendedEvent {
 
             Index = 0;
 
-            List = new string[] { "Nothing", "" };
+            List = new string[] { "Nothing Selected", "" };
             if ( GameObject == null ) return;
 
             var tempList = new List<string>();
@@ -553,6 +553,8 @@ public class ExtendedEvent {
         }
 
         public void Invoke() {
+            if ( Index < 2 ) return;
+
             var splits = List[Index].Split( '/' );
             switch ( splits[1] ) {
                 case "Fields":
