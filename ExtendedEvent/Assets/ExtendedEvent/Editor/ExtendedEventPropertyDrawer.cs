@@ -236,6 +236,9 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         } else if ( t == typeof( Vector4 ) ) {
             rect.y -= 16f;
             value.stringValue = EditorGUI.Vector4Field( rect, "", ExtendedEventConverter.Vec4( value.stringValue ) ).ToString();
+        } else if ( t == typeof( Quaternion ) ) {
+            rect.y -= 16f;
+            value.stringValue = EditorGUI.Vector4Field( rect, "", ExtendedEventConverter.Vec4( value.stringValue ) ).ToString();
         } else if ( t == typeof( GameObject ) ) {
             var objectFound = GameObject.Find( value.stringValue );
             objectFound = (GameObject)EditorGUI.ObjectField( rect, objectFound, typeof( GameObject ), true );

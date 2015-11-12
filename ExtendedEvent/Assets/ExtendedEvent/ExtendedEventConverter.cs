@@ -21,6 +21,12 @@ public class ExtendedEventConverter {
         var splits = value.Split( ',' );
         return new Vector4( float.Parse( splits[0] ), float.Parse( splits[1] ), float.Parse( splits[2] ), float.Parse( splits[3] ) );
     }
+    public static Quaternion Quat(string value) {
+        if ( string.IsNullOrEmpty( value ) ) return new Quaternion();
+        value = value.Trim( '(', ')' );
+        var splits = value.Split( ',' );
+        return new Quaternion( float.Parse( splits[0] ), float.Parse( splits[1] ), float.Parse( splits[2] ), float.Parse( splits[3] ) );
+    }
     public static Bounds Bounds( string value ) {
         if ( string.IsNullOrEmpty( value ) ) return new Bounds();
         value = value.Replace( ", Extents: ", "|" );

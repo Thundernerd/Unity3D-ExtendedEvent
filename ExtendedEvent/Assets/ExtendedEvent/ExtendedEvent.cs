@@ -113,6 +113,8 @@ public class ExtendedEvent {
                 value = ExtendedEventConverter.Vec3( NewValue );
             } else if ( t == typeof( Vector4 ) ) {
                 value = ExtendedEventConverter.Vec4( NewValue );
+            } else if ( t == typeof( Quaternion ) ) {
+                value = ExtendedEventConverter.Quat( NewValue );
             } else if ( t == typeof( GameObject ) ) {
                 value = GameObject.Find( NewValue );
             } else if ( t == typeof( Bounds ) ) {
@@ -204,6 +206,8 @@ public class ExtendedEvent {
                 value = ExtendedEventConverter.Vec3( NewValue );
             } else if ( t == typeof( Vector4 ) ) {
                 value = ExtendedEventConverter.Vec4( NewValue );
+            } else if ( t == typeof( Quaternion ) ) {
+                value = ExtendedEventConverter.Quat( NewValue );
             } else if ( t == typeof( GameObject ) ) {
                 value = GameObject.Find( NewValue );
             } else if ( t == typeof( Bounds ) ) {
@@ -322,6 +326,8 @@ public class ExtendedEvent {
                     parameters[i] = ExtendedEventConverter.Vec3( p.NewValue );
                 } else if ( t == typeof( Vector4 ) ) {
                     parameters[i] = ExtendedEventConverter.Vec4( p.NewValue );
+                } else if ( t == typeof( Quaternion ) ) {
+                    parameters[i] = ExtendedEventConverter.Quat( p.NewValue );
                 } else if ( t == typeof( GameObject ) ) {
                     parameters[i] = GameObject.Find( p.NewValue );
                 } else if ( t == typeof( Bounds ) ) {
