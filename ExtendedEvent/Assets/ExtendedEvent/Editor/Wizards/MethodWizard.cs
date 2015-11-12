@@ -5,13 +5,14 @@ using UnityEngine;
 public class MethodWizard : ScriptableWizard {
 
     public SerializedProperty Property;
+    private bool ended = false;
 
     protected override bool DrawWizardGUI() {
         if ( Property == null ) return false;
 
         StartGUI();
         WizardGUI();
-        return EndGUI();
+        return ended ? false : EndGUI();
     }
 
 
@@ -20,7 +21,17 @@ public class MethodWizard : ScriptableWizard {
     }
 
     public void WizardGUI() {
-        for ( int i = 0; i < Property.arraySize; i++ ) {
+        int size = 0;
+
+        try {
+            size = Property.arraySize;
+        } catch ( System.NullReferenceException ) {
+            ended = true;
+            EditorGUILayout.HelpBox( "Focus on my parent window has been lost, please close me", MessageType.Error );
+            return;
+        }        
+
+        for ( int i = 0; i < size; i++ ) {
             var parameter = Property.GetArrayElementAtIndex( i );
             var name = parameter.FindPropertyRelative( "Name" );
             var assembly = parameter.FindPropertyRelative( "Assembly" );

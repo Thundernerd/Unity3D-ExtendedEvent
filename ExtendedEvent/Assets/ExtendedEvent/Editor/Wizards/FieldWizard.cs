@@ -3,13 +3,14 @@
 public class FieldWizard : ScriptableWizard {
 
     public SerializedProperty Property;
+    protected bool ended = false;
 
     protected override bool DrawWizardGUI() {
         if ( Property == null ) return false;
 
         StartGUI();
         WizardGUI();
-        return EndGUI();
+        return ended ? false : EndGUI();
     }
 
 

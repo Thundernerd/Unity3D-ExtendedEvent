@@ -11,7 +11,13 @@ public class BoundsWizard : FieldWizard {
     }
 
     public override void WizardGUI() {
-        Property.stringValue = EditorGUILayout.BoundsField( Bounds( Property.stringValue ) ).ToString();
+        try {
+            Property.stringValue = EditorGUILayout.BoundsField( Bounds( Property.stringValue ) ).ToString();
+        } catch ( System.NullReferenceException ) {
+            ended = true;
+            EditorGUILayout.HelpBox( "Focus on my parent window has been lost, please close me", MessageType.Error );
+            return;
+        }
     }
 
     private Vector3 Vec3( string value ) {

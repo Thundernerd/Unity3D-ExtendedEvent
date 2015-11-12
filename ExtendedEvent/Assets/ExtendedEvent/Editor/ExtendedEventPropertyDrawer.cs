@@ -15,11 +15,18 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         var t = property.serializedObject.targetObject.GetType();
         var f = t.GetField( property.name );
         var evt = f.GetValue( property.serializedObject.targetObject ) as ExtendedEvent;
-        evt.Objects[index].Reset();
+        evt.Listeners[index].Reset();
+    }
+
+    private void HardReset( int index ) {
+        var t = property.serializedObject.targetObject.GetType();
+        var f = t.GetField( property.name );
+        var evt = f.GetValue( property.serializedObject.targetObject ) as ExtendedEvent;
+        evt.Listeners[index].Reset( null );
     }
 
     private List<SerializedProperty> GetObjectsList() {
-        var objects = property.FindPropertyRelative( "Objects" );
+        var objects = property.FindPropertyRelative( "Listeners" );
         var list = new List<SerializedProperty>();
         for ( int i = 0; i < objects.arraySize; i++ ) {
             list.Add( objects.GetArrayElementAtIndex( i ) );
@@ -65,14 +72,15 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
     }
 
     private void AddInternal( ReorderableList list ) {
-        var pList = property.FindPropertyRelative( "Objects" );
+        var pList = property.FindPropertyRelative( "Listeners" );
         pList.InsertArrayElementAtIndex( pList.arraySize );
         property.serializedObject.ApplyModifiedProperties();
         list.list = GetObjectsList();
+        HardReset( pList.arraySize - 1 );
     }
 
     private void RemoveInternal( ReorderableList list ) {
-        var pList = property.FindPropertyRelative( "Objects" );
+        var pList = property.FindPropertyRelative( "Listeners" );
         pList.DeleteArrayElementAtIndex( list.index );
         property.serializedObject.ApplyModifiedProperties();
         list.list = GetObjectsList();
@@ -105,23 +113,35 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
 
         if ( property.FindPropertyRelative( "GameObject" ).objectReferenceValue != null ) {
             if ( pIndex.intValue != 0 ) {
+                var pList = property.FindPropertyRelative( "List" );
+                var pItem = pList.GetArrayElementAtIndex( pIndex.intValue );
+                var iList = property.FindPropertyRelative( "Indeces" );
+                var iIndex = iList.GetArrayElementAtIndex( pIndex.intValue );
                 var tempRect = new Rect( rect.x, rect.y + rect.height / 2, rect.width, rect.height / 2 );
-                var fields = property.FindPropertyRelative( "Fields" );
-                var properties = property.FindPropertyRelative( "Properties" );
-                if ( pIndex.intValue > fields.arraySize + properties.arraySize ) {
-                    DrawMethod( tempRect, property, pIndex.intValue - 1 - fields.arraySize - properties.arraySize );
-                } else if ( pIndex.intValue > fields.arraySize ) {
-                    DrawProperty( tempRect, property, pIndex.intValue - 1 - fields.arraySize );
-                } else {
-                    DrawField( tempRect, property, pIndex.intValue - 1 );
+
+                var splits = pItem.stringValue.Split( '/' );
+                switch ( splits[1] ) {
+                    case "Fields":
+                        var fields = property.FindPropertyRelative( "Fields" );
+                        var field = fields.GetArrayElementAtIndex( iIndex.intValue );
+                        DrawSerializedProperty( tempRect, field );
+                        break;
+                    case "Properties":
+                        var properties = property.FindPropertyRelative( "Properties" );
+                        var prop = properties.GetArrayElementAtIndex( iIndex.intValue );
+                        DrawSerializedProperty( tempRect, prop );
+                        break;
+                    case "Methods":
+                        var methods = property.FindPropertyRelative( "Methods" );
+                        var method = methods.GetArrayElementAtIndex( iIndex.intValue );
+                        DrawMethod( tempRect, method );
+                        break;
                 }
             }
         }
     }
 
-    private void DrawMethod( Rect rect, SerializedProperty property, int index ) {
-        var methods = property.FindPropertyRelative( "Methods" );
-        var method = methods.GetArrayElementAtIndex( index );
+    private void DrawMethod( Rect rect, SerializedProperty method ) {
         var parameters = method.FindPropertyRelative( "Parameters" );
 
         if ( parameters.arraySize == 1 ) {
@@ -129,6 +149,9 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
             DrawSerializedProperty( rect, parameter );
         } else if ( parameters.arraySize > 1 ) {
             EditorGUI.BeginChangeCheck();
+
+            rect.yMin += 3;
+            rect.yMax += 3;
 
             if ( GUI.Button( rect, "..." ) ) {
                 var wiz = ScriptableWizard.DisplayWizard<MethodWizard>( "Parameter Editor", "Close" );
@@ -139,8 +162,6 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
                 property.serializedObject.ApplyModifiedProperties();
             }
         }
-
-        
     }
 
     private void DrawProperty( Rect rect, SerializedProperty property, int index ) {

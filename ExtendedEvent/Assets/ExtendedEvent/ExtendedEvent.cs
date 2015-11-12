@@ -252,7 +252,7 @@ public class ExtendedEvent {
                     Object = (UnityEngine.Object)Activator.CreateInstance( info.ParameterType );
                 }
             } catch ( Exception ) {
-                // Catch 'm all
+                // Catch 'm all just in case (bad habit, I am aware)
             }
         }
 
@@ -338,7 +338,7 @@ public class ExtendedEvent {
             method.Invoke( component, parameters );
         }
 
-        public string ToStringShort() {
+        public override string ToString() {
             var parameters = "";
             foreach ( var item in Parameters ) {
                 parameters += string.Format( "{0}, ", item.ToStringShort() );
@@ -347,27 +347,23 @@ public class ExtendedEvent {
 
             return string.Format( "{2}/Methods/{0} ({1})", Name, parameters, parentName );
         }
-
-        public override string ToString() {
-            return string.Format( "{0}", Name );
-        }
     }
 
     [Serializable]
-    public class GObject {
-
+    public class GameObjectContainer {
         public GameObject GameObject;
 
         public List<Field> Fields = new List<Field>();
         public List<Property> Properties = new List<Property>();
         public List<Method> Methods = new List<Method>();
 
-        public string[] List = { "Nothing" };
+        public string[] List = { "Nothing", "" };
+        public List<int> Indeces = new List<int>();
         public int Index = 0;
 
-        public GObject() { }
+        public GameObjectContainer() { }
 
-        public GObject( GameObject gObj ) {
+        public GameObjectContainer( GameObject gObj ) {
             Reset( gObj );
         }
 
@@ -380,7 +376,17 @@ public class ExtendedEvent {
             Fields.Clear();
             Properties.Clear();
             Methods.Clear();
+
+            Indeces.Clear();
+            Indeces.Add( 0 );
+            Indeces.Add( 0 );
+
             Index = 0;
+
+            List = new string[] { "Nothing", "" };
+            if ( GameObject == null ) return;
+
+            var tempList = new List<string>();
 
             var components = GameObject.GetComponents<Component>();
             var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
@@ -421,41 +427,44 @@ public class ExtendedEvent {
                 methods.Sort( ( m1, m2 ) => m1.Name.CompareTo( m2.Name ) );
 
                 foreach ( var f in fields ) {
-                    Fields.Add( new Field( f, type ) );
+                    var field = new Field( f, type );
+                    Indeces.Add( Fields.Count );
+                    tempList.Add( field.ToString() );
+                    Fields.Add( field );
                 }
 
                 foreach ( var p in properties ) {
-                    Properties.Add( new Property( p, type ) );
+                    var property = new Property( p, type );
+                    Indeces.Add( Properties.Count );
+                    tempList.Add( property.ToString() );
+                    Properties.Add( property );
                 }
 
                 foreach ( var m in methods ) {
-                    Methods.Add( new Method( m, type ) );
+                    var method = new Method( m, type );
+                    Indeces.Add( Methods.Count );
+                    tempList.Add( method.ToString() );
+                    Methods.Add( method );
                 }
             }
 
-            List = new string[Fields.Count + Properties.Count + Methods.Count + 1];
-            List[0] = "Nothing Selected";
-
-            for ( int i = 0; i < Fields.Count; i++ ) {
-                List[i + 1] = Fields[i].ToString();
-            }
-            for ( int i = 0, j = Fields.Count; i < Properties.Count; i++, j++ ) {
-                List[j + 1] = Properties[i].ToString();
-            }
-            for ( int i = 0, j = Fields.Count + Properties.Count; i < Methods.Count; i++, j++ ) {
-                List[j + 1] = Methods[i].ToStringShort();
-            }
+            tempList.Insert( 0, "" );
+            tempList.Insert( 0, "Nothing Selected" );
+            List = tempList.ToArray();
         }
 
         public void Invoke() {
-            var i = Index - 1;
-
-            if ( i >= Fields.Count + Properties.Count ) {
-                Methods[i - Fields.Count - Properties.Count].Invoke( GameObject );
-            } else if ( i >= Fields.Count ) {
-                Properties[i - Fields.Count].Invoke( GameObject );
-            } else {
-                Fields[i].Invoke( GameObject );
+            var splits = List[Index].Split( '/' );
+            switch ( splits[1] ) {
+                case "Fields":
+                    Fields[Indeces[Index]].Invoke( GameObject );
+                    break;
+                case "Properties":
+                    Properties[Indeces[Index]].Invoke( GameObject );
+                    break;
+                case "Methods":
+                    Methods[Indeces[Index]].Invoke( GameObject );
+                    break;
             }
         }
 
@@ -464,10 +473,10 @@ public class ExtendedEvent {
         }
     }
 
-    public List<GObject> Objects = new List<GObject>();
+    public List<GameObjectContainer> Listeners = new List<GameObjectContainer>();
 
     public void Invoke() {
-        foreach ( var item in Objects ) {
+        foreach ( var item in Listeners ) {
             item.Invoke();
         }
     }
