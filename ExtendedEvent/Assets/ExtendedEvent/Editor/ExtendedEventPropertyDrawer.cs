@@ -6,7 +6,7 @@ using UnityEditorInternal;
 using UnityEngine;
 
 [CustomPropertyDrawer( typeof( ExtendedEvent ) )]
-public class ExtendedEventInspector : PropertyDrawer {
+public class ExtendedEventPropertyDrawer : PropertyDrawer {
 
     private SerializedProperty property;
     private ReorderableList rList;
