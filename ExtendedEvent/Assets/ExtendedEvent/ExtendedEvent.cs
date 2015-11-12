@@ -64,16 +64,12 @@ public class ExtendedEvent {
         public string Assembly;
         public UnityEngine.Object Object;
 
-        //[SerializeField]
-        //private string parentAssembly;
-        [SerializeField]
-        private string parentType;
         [SerializeField]
         private string parentName;
 
         public Field() { }
 
-        public Field( FieldInfo info ) {
+        public Field( FieldInfo info, Type type ) {
             Name = info.Name;
             Assembly = info.FieldType.Assembly.FullName;
             Type = info.FieldType.FullName;
@@ -87,19 +83,17 @@ public class ExtendedEvent {
                     Object = (UnityEngine.Object)Activator.CreateInstance( info.FieldType );
                 }
             } catch ( Exception ) {
-                // Catch 'm all
+                // Catch 'm all just in case (bad habit, I am aware)
             }
 
-            //parentAssembly = info.DeclaringType.Assembly.FullName;
-            parentType = info.DeclaringType.FullName;
-            parentName = info.DeclaringType.Name;
+            parentName = type.Name;
         }
 
         public void Invoke( GameObject item ) {
             var a = System.Reflection.Assembly.Load( Assembly );
             var t = a.GetType( Type );
 
-            var component = item.GetComponent( parentType );
+            var component = item.GetComponent( parentName );
             var componentType = component.GetType();
             var field = componentType.GetField( Name );
 
@@ -143,7 +137,93 @@ public class ExtendedEvent {
         }
 
         public override string ToString() {
-            return string.Format( "{0}/{1} {2}", parentName, RepresentableType, Name );
+            return string.Format( "{0}/Fields/{1} {2}", parentName, RepresentableType, Name );
+        }
+    }
+
+    [Serializable]
+    public class Property {
+        public string Name;
+        public string RepresentableType;
+        public string NewValue;
+        public string Type;
+        public string Assembly;
+        public UnityEngine.Object Object;
+
+        [SerializeField]
+        private string parentName;
+
+        public Property() { }
+
+        public Property( PropertyInfo info, Type type ) {
+            Name = info.Name;
+            Assembly = info.PropertyType.Assembly.FullName;
+            Type = info.PropertyType.FullName;
+            RepresentableType = GetTypeName( info.PropertyType );
+
+            try {
+                if ( info.PropertyType.IsSubclassOf( typeof( Component ) ) ) {
+                    NewValue = "";
+                } else {
+                    NewValue = Activator.CreateInstance( info.PropertyType ).ToString();
+                    Object = (UnityEngine.Object)Activator.CreateInstance( info.PropertyType );
+                }
+            } catch ( Exception ) {
+                // Catch 'm all just in case (bad habit, I am aware)
+            }
+
+            parentName = type.Name;
+        }
+
+        public void Invoke( GameObject item ) {
+            var a = System.Reflection.Assembly.Load( Assembly );
+            var t = a.GetType( Type );
+
+            var component = item.GetComponent( parentName );
+            var componentType = component.GetType();
+            var field = componentType.GetProperty( Name );
+
+            object value = null;
+
+            if ( t == typeof( int ) ) {
+                value = int.Parse( NewValue );
+            } else if ( t == typeof( float ) ) {
+                value = float.Parse( NewValue );
+            } else if ( t == typeof( double ) ) {
+                value = double.Parse( NewValue );
+            } else if ( t == typeof( long ) ) {
+                value = long.Parse( NewValue );
+            } else if ( t == typeof( string ) ) {
+                value = NewValue;
+            } else if ( t == typeof( bool ) ) {
+                value = bool.Parse( NewValue );
+            } else if ( t == typeof( Vector2 ) ) {
+                value = ExtendedEventConverter.Vec2( NewValue );
+            } else if ( t == typeof( Vector3 ) ) {
+                value = ExtendedEventConverter.Vec3( NewValue );
+            } else if ( t == typeof( Vector4 ) ) {
+                value = ExtendedEventConverter.Vec4( NewValue );
+            } else if ( t == typeof( GameObject ) ) {
+                value = GameObject.Find( NewValue );
+            } else if ( t == typeof( Bounds ) ) {
+                value = ExtendedEventConverter.Bounds( NewValue );
+            } else if ( t == typeof( Rect ) ) {
+                value = ExtendedEventConverter.Rect( NewValue );
+            } else if ( t == typeof( Color ) ) {
+                value = ExtendedEventConverter.Color( NewValue );
+            } else if ( t == typeof( AnimationCurve ) ) {
+                value = ExtendedEventConverter.Curve( NewValue );
+            } else if ( t.IsSubclassOf( typeof( Enum ) ) ) {
+                value = Enum.Parse( t, NewValue );
+            } else if ( t.IsSubclassOf( typeof( UnityEngine.Object ) ) ) {
+                value = Object;
+            }
+
+            field.SetValue( component, value, null );
+        }
+
+        public override string ToString() {
+            return string.Format( "{0}/Properties/{1} {2}", parentName, RepresentableType, Name );
         }
     }
 
@@ -190,16 +270,12 @@ public class ExtendedEvent {
         public string Name;
         public List<Parameter> Parameters;
 
-        //[SerializeField]
-        //private string parentAssembly;
-        //[SerializeField]
-        //private string parentType;
         [SerializeField]
         private string parentName;
 
         public Method() { }
 
-        public Method( MethodInfo info ) {
+        public Method( MethodInfo info, Type type ) {
             Name = info.Name;
             Parameters = new List<Parameter>();
 
@@ -208,9 +284,7 @@ public class ExtendedEvent {
                 Parameters.Add( new Parameter( p ) );
             }
 
-            //parentAssembly = info.DeclaringType.Assembly.FullName;
-            //parentType = info.DeclaringType.FullName;
-            parentName = info.DeclaringType.Name;
+            parentName = type.Name;
         }
 
         public void Invoke( GameObject item ) {
@@ -264,16 +338,6 @@ public class ExtendedEvent {
             method.Invoke( component, parameters );
         }
 
-        public string ToStringLong() {
-            var parameters = "";
-            foreach ( var item in Parameters ) {
-                parameters += string.Format( "{0}, ", item.ToStringLong() );
-            }
-            parameters = parameters.TrimEnd( ',', ' ' );
-
-            return string.Format( "{2}/{0} ({1})", Name, parameters, parentName );
-        }
-
         public string ToStringShort() {
             var parameters = "";
             foreach ( var item in Parameters ) {
@@ -281,7 +345,7 @@ public class ExtendedEvent {
             }
             parameters = parameters.TrimEnd( ',', ' ' );
 
-            return string.Format( "{2}/{0} ({1})", Name, parameters, parentName );
+            return string.Format( "{2}/Methods/{0} ({1})", Name, parameters, parentName );
         }
 
         public override string ToString() {
@@ -295,6 +359,7 @@ public class ExtendedEvent {
         public GameObject GameObject;
 
         public List<Field> Fields = new List<Field>();
+        public List<Property> Properties = new List<Property>();
         public List<Method> Methods = new List<Method>();
 
         public string[] List = { "Nothing" };
@@ -313,18 +378,35 @@ public class ExtendedEvent {
 
         public void Reset() {
             Fields.Clear();
+            Properties.Clear();
             Methods.Clear();
             Index = 0;
 
             var components = GameObject.GetComponents<Component>();
+            var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             foreach ( var cmp in components ) {
                 var type = cmp.GetType();
-                var fields = type.GetFields( BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly ).ToList();
-                var methods = ( from m in type.GetMethods( BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly )
-                                where !m.Name.StartsWith( "set_" ) && !m.Name.StartsWith( "get_" ) &&
-                                !m.ContainsGenericParameters && !m.IsConstructor && !m.IsGenericMethodDefinition &&
-                                !m.IsGenericMethod && !m.IsAbstract
-                                select m ).ToList();
+
+                var fields = type.GetFields( flags ).ToList();
+                fields.Sort( ( f1, f2 ) => f1.Name.CompareTo( f2.Name ) );
+
+                var properties = type.GetProperties( flags ).Where( p => p.CanWrite ).ToList();
+                if ( type.IsSubclassOf( typeof( Behaviour ) ) ) {
+                    var t = typeof( Behaviour );
+                    var temp = t.GetProperties( flags ).Where( p => p.CanWrite ).ToList();
+                    properties.AddRange( temp );
+                }
+                {   // Bracketing it for no good reason
+                    var t = typeof( Component );
+                    var temp = t.GetProperties( flags ).Where( p => p.CanWrite ).ToList();
+                    properties.AddRange( temp );
+                }
+                properties.Sort( ( p1, p2 ) => p1.Name.CompareTo( p2.Name ) );
+
+                var methods = type.GetMethods( flags ).Where( m =>
+                   !m.Name.StartsWith( "set_" ) && !m.Name.StartsWith( "get_" ) &&
+                   !m.ContainsGenericParameters && !m.IsGenericMethod && !m.IsGenericMethodDefinition &&
+                   !m.IsConstructor && !m.IsAbstract ).ToList();
 
                 for ( int i = methods.Count - 1; i >= 0; i-- ) {
                     var pars = methods[i].GetParameters();
@@ -336,23 +418,31 @@ public class ExtendedEvent {
                         }
                     }
                 }
+                methods.Sort( ( m1, m2 ) => m1.Name.CompareTo( m2.Name ) );
 
                 foreach ( var f in fields ) {
-                    Fields.Add( new Field( f ) );
+                    Fields.Add( new Field( f, type ) );
+                }
+
+                foreach ( var p in properties ) {
+                    Properties.Add( new Property( p, type ) );
                 }
 
                 foreach ( var m in methods ) {
-                    Methods.Add( new Method( m ) );
+                    Methods.Add( new Method( m, type ) );
                 }
             }
 
-            List = new string[Fields.Count + Methods.Count + 1];
+            List = new string[Fields.Count + Properties.Count + Methods.Count + 1];
             List[0] = "Nothing Selected";
 
             for ( int i = 0; i < Fields.Count; i++ ) {
                 List[i + 1] = Fields[i].ToString();
             }
-            for ( int i = 0, j = Fields.Count; i < Methods.Count; i++, j++ ) {
+            for ( int i = 0, j = Fields.Count; i < Properties.Count; i++, j++ ) {
+                List[j + 1] = Properties[i].ToString();
+            }
+            for ( int i = 0, j = Fields.Count + Properties.Count; i < Methods.Count; i++, j++ ) {
                 List[j + 1] = Methods[i].ToStringShort();
             }
         }
@@ -360,8 +450,10 @@ public class ExtendedEvent {
         public void Invoke() {
             var i = Index - 1;
 
-            if ( i >= Fields.Count ) {
-                Methods[i - Fields.Count].Invoke( GameObject );
+            if ( i >= Fields.Count + Properties.Count ) {
+                Methods[i - Fields.Count - Properties.Count].Invoke( GameObject );
+            } else if ( i >= Fields.Count ) {
+                Properties[i - Fields.Count].Invoke( GameObject );
             } else {
                 Fields[i].Invoke( GameObject );
             }

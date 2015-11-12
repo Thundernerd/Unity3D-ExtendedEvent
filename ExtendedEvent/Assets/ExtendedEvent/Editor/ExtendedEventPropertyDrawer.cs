@@ -107,8 +107,11 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
             if ( pIndex.intValue != 0 ) {
                 var tempRect = new Rect( rect.x, rect.y + rect.height / 2, rect.width, rect.height / 2 );
                 var fields = property.FindPropertyRelative( "Fields" );
-                if ( pIndex.intValue > fields.arraySize ) {
-                    DrawMethod( tempRect, property, pIndex.intValue - 1 - fields.arraySize );
+                var properties = property.FindPropertyRelative( "Properties" );
+                if ( pIndex.intValue > fields.arraySize + properties.arraySize ) {
+                    DrawMethod( tempRect, property, pIndex.intValue - 1 - fields.arraySize - properties.arraySize );
+                } else if ( pIndex.intValue > fields.arraySize ) {
+                    DrawProperty( tempRect, property, pIndex.intValue - 1 - fields.arraySize );
                 } else {
                     DrawField( tempRect, property, pIndex.intValue - 1 );
                 }
@@ -121,49 +124,44 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         var method = methods.GetArrayElementAtIndex( index );
         var parameters = method.FindPropertyRelative( "Parameters" );
 
-        rect.yMin += 3f;
-        rect.yMax += 3f;
-
-        EditorGUI.BeginChangeCheck();
-
         if ( parameters.arraySize == 1 ) {
             var parameter = parameters.GetArrayElementAtIndex( 0 );
-            var assembly = parameter.FindPropertyRelative( "Assembly" );
-            var type = parameter.FindPropertyRelative( "Type" );
-            var value = parameter.FindPropertyRelative( "NewValue" );
-            var obj = parameter.FindPropertyRelative( "Object" );
-
-            var a = System.Reflection.Assembly.Load( assembly.stringValue );
-            var t = a.GetType( type.stringValue );
-
-            if ( t.IsSubclassOf( typeof( UnityEngine.Object ) ) ) {
-                obj.objectReferenceValue = EditorGUI.ObjectField( rect, obj.objectReferenceValue, t, true );
-            } else {
-                DrawProperty( t, value, rect );
-            }
-
+            DrawSerializedProperty( rect, parameter );
         } else if ( parameters.arraySize > 1 ) {
+            EditorGUI.BeginChangeCheck();
+
             if ( GUI.Button( rect, "..." ) ) {
                 var wiz = ScriptableWizard.DisplayWizard<MethodWizard>( "Parameter Editor", "Close" );
                 wiz.Property = parameters;
             }
+
+            if ( EditorGUI.EndChangeCheck() ) {
+                property.serializedObject.ApplyModifiedProperties();
+            }
         }
 
-        if ( EditorGUI.EndChangeCheck() ) {
-            property.serializedObject.ApplyModifiedProperties();
-        }
+        
+    }
+
+    private void DrawProperty( Rect rect, SerializedProperty property, int index ) {
+        var properties = property.FindPropertyRelative( "Properties" );
+        var prop = properties.GetArrayElementAtIndex( index );
+        DrawSerializedProperty( rect, prop );
     }
 
     private void DrawField( Rect rect, SerializedProperty property, int index ) {
         var fields = property.FindPropertyRelative( "Fields" );
         var field = fields.GetArrayElementAtIndex( index );
+        DrawSerializedProperty( rect, field );
+    }
 
-        var value = field.FindPropertyRelative( "NewValue" );
-        var type = field.FindPropertyRelative( "Type" );
-        var assembly = field.FindPropertyRelative( "Assembly" );
-        var obj = field.FindPropertyRelative( "Object" );
+    private void DrawSerializedProperty( Rect rect, SerializedProperty prop ) {
+        var value = prop.FindPropertyRelative( "NewValue" );
+        var type = prop.FindPropertyRelative( "Type" );
+        var assembly = prop.FindPropertyRelative( "Assembly" );
+        var obj = prop.FindPropertyRelative( "Object" );
 
-        var a = System.Reflection.Assembly.Load( assembly.stringValue );
+        var a = Assembly.Load( assembly.stringValue );
         var t = a.GetType( type.stringValue );
 
         rect.yMin += 3f;
@@ -174,7 +172,7 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         if ( t.IsSubclassOf( typeof( UnityEngine.Object ) ) ) {
             obj.objectReferenceValue = EditorGUI.ObjectField( rect, obj.objectReferenceValue, t, true );
         } else {
-            DrawProperty( t, value, rect );
+            GUIProperty( t, value, rect );
         }
 
         if ( EditorGUI.EndChangeCheck() ) {
@@ -191,7 +189,7 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         }
     }
 
-    private void DrawProperty( Type t, SerializedProperty value, Rect rect ) {
+    private void GUIProperty( Type t, SerializedProperty value, Rect rect ) {
         if ( t == typeof( int ) ) {
             value.stringValue = EditorGUI.IntField( rect, int.Parse( value.stringValue ) ).ToString();
         } else if ( t == typeof( float ) ) {
@@ -240,7 +238,7 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         }
     }
 
-    #region MyRegion
+    #region DropDown 
     private static int dropdownHash = "extDropDown".GetHashCode();
     private static GUIStyle dropdownPopupStyle = new GUIStyle( EditorStyles.popup );
     private class DropdownCallbackInfo {
