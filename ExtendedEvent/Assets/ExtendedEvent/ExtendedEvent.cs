@@ -378,7 +378,7 @@ public class ExtendedEvent {
         public List<Property> Properties = new List<Property>();
         public List<Method> Methods = new List<Method>();
 
-        public string[] List = { "Nothing Selected", "" };
+        public GUIContent[] List = new GUIContent[0];
         public List<int> Indeces = new List<int>();
         public int Index = 0;
 
@@ -407,10 +407,10 @@ public class ExtendedEvent {
 
             Index = 0;
 
-            List = new string[] { "Nothing Selected", "" };
+            List = new GUIContent[] { new GUIContent( "Nothing Selected" ), new GUIContent( "" ) };
             if ( GameObject == null ) return;
 
-            var tempList = new List<string>();
+            var tempList = new List<GUIContent>();
             var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
             {
@@ -457,21 +457,21 @@ public class ExtendedEvent {
                 foreach ( var f in gFields ) {
                     var field = new Field( f, gType );
                     Indeces.Add( Fields.Count );
-                    tempList.Add( field.ToString() );
+                    tempList.Add( new GUIContent( field.ToString() ) );
                     Fields.Add( field );
                 }
 
                 foreach ( var p in gProperties ) {
                     var property = new Property( p, gType );
                     Indeces.Add( Properties.Count );
-                    tempList.Add( property.ToString() );
+                    tempList.Add( new GUIContent( property.ToString() ) );
                     Properties.Add( property );
                 }
 
                 foreach ( var m in gMethods ) {
                     var method = new Method( m, gType );
                     Indeces.Add( Methods.Count );
-                    tempList.Add( method.ToString() );
+                    tempList.Add( new GUIContent( method.ToString() ) );
                     Methods.Add( method );
                 }
             }
@@ -534,34 +534,34 @@ public class ExtendedEvent {
                 foreach ( var f in fields ) {
                     var field = new Field( f, type );
                     Indeces.Add( Fields.Count );
-                    tempList.Add( field.ToString() );
+                    tempList.Add( new GUIContent( field.ToString() ) );
                     Fields.Add( field );
                 }
 
                 foreach ( var p in properties ) {
                     var property = new Property( p, type );
                     Indeces.Add( Properties.Count );
-                    tempList.Add( property.ToString() );
+                    tempList.Add( new GUIContent( property.ToString() ) );
                     Properties.Add( property );
                 }
 
                 foreach ( var m in methods ) {
                     var method = new Method( m, type );
                     Indeces.Add( Methods.Count );
-                    tempList.Add( method.ToString() );
+                    tempList.Add( new GUIContent( method.ToString() ) );
                     Methods.Add( method );
                 }
             }
 
-            tempList.Insert( 0, "" );
-            tempList.Insert( 0, "Nothing Selected" );
+            tempList.Insert( 0, new GUIContent( "" ) );
+            tempList.Insert( 0, new GUIContent( "Nothing Selected" ) );
             List = tempList.ToArray();
         }
 
         public void Invoke() {
             if ( Index < 2 ) return;
 
-            var splits = List[Index].Split( '/' );
+            var splits = List[Index].text.Split( '/' );
             switch ( splits[1] ) {
                 case "Fields":
                     Fields[Indeces[Index]].Invoke( GameObject );
