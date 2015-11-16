@@ -11,7 +11,7 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
     private ReorderableList rList;
     private ExtendedEvent eEvent;
     private string header = "";
-    private ExtendedEvent.GameObjectContainer current;
+    private ExtendedEvent.GameObjectContainer listener;
 
     private void RestoreState( SerializedProperty property ) {
         if ( rList == null || eEvent == null ) {
@@ -55,7 +55,7 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
     }
 
     private void DrawElementInternal( Rect rect, int index, bool isActive, bool isFocused ) {
-        current = eEvent.Listeners[index];
+        listener = eEvent.Listeners[index];
 
         rect.yMin += 3f;
         rect.yMax -= 7f;
@@ -65,15 +65,114 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
 
         var gameObjectRect = new Rect( rect.x, rect.y, thirdWidth, halfHeight );
         var dropdownRect = new Rect( rect.x + thirdWidth, rect.y, thirdWidth * 2, halfHeight );
+        var bottomRect = new Rect( rect.x, rect.y + halfHeight, rect.width, halfHeight );
 
         EditorGUI.BeginChangeCheck();
-        current.GameObject = (GameObject)EditorGUI.ObjectField( gameObjectRect, current.GameObject, typeof( GameObject ), true );
+        listener.GameObject = (GameObject)EditorGUI.ObjectField( gameObjectRect, listener.GameObject, typeof( GameObject ), true );
         if ( EditorGUI.EndChangeCheck() ) {
-            current.Reset();
+            listener.Reset();
         }
 
-        current.Index = DropdownList( dropdownRect, current.Index, current.List );
+        listener.Index = DropdownList( dropdownRect, listener.Index, listener.List );
+        var i = listener.Index;
+
+        if ( i > 1 && listener.GameObject != null ) {
+            switch ( listener.Type ) {
+                case 0:
+                    var field = listener.CurrentField;
+                    DrawField( field, bottomRect );
+                    break;
+                case 1:
+                    var property = listener.CurrentProperty;
+                    break;
+                case 2:
+                    var method = listener.CurrentMethod;
+                    break;
+            }
+        }
     }
+
+    private void DrawField( ExtendedEvent.Field field, Rect rect ) {
+        rect.yMax += 3;
+        rect.yMin += 3;
+
+        if (field.IsArray) {
+            ShowWizard<ArrayWizard>( rect, field, "Array Editor", 405, 115 );
+            return;
+        }
+
+        switch ( field.TypeName ) {
+            case "String":
+                field.StringValue = EditorGUI.TextField( rect, field.StringValue );
+                break;
+            case "Int32":
+                field.IntValue = EditorGUI.IntField( rect, field.IntValue );
+                break;
+            case "Int64":
+                field.LongValue = EditorGUI.LongField( rect, field.LongValue );
+                break;
+            case "Single":
+                field.FloatValue = EditorGUI.FloatField( rect, field.FloatValue );
+                break;
+            case "Double":
+                field.DoubleValue = EditorGUI.DoubleField( rect, field.DoubleValue );
+                break;
+            case "Boolean":
+                field.BoolValue = EditorGUI.Toggle( rect, field.BoolValue );
+                break;
+            case "Vector2":
+                field.Vector2Value = EditorGUI.Vector2Field( rect, "", field.Vector2Value );
+                break;
+            case "Vector3":
+                field.Vector3Value = EditorGUI.Vector3Field( rect, "", field.Vector3Value );
+                break;
+            case "Vector4":
+                rect.y -= 16f;
+                field.Vector4Value = EditorGUI.Vector4Field( rect, "", field.Vector4Value );
+                break;
+            case "Quaternion":
+                rect.y -= 16f;
+                var v4 = new Vector4( field.QuaternionValue.x, field.QuaternionValue.y, field.QuaternionValue.z, field.QuaternionValue.w );
+                v4 = EditorGUI.Vector4Field( rect, "", v4 );
+                field.QuaternionValue = new Quaternion( v4.x, v4.y, v4.z, v4.w );
+                break;
+            case "Bounds":
+                ShowWizard<BoundsWizard>( rect, field, "Bounds Editor", 405, 115 );
+                break;
+            case "Rect":
+                ShowWizard<RectWizard>( rect, field, "Rect Editor", 350, 115 );
+                break;
+            case "AnimationCurve":
+                field.AnimationCurveValue = EditorGUI.CurveField( rect, field.AnimationCurveValue );
+                break;
+            case "Object":
+                field.ObjectValue = EditorGUI.ObjectField( rect, field.ObjectValue, field.Type, true );
+                break;
+            case "Enum":
+                var enumValue = (Enum)Enum.Parse( field.Type, field.EnumNames[field.EnumValue] );
+                enumValue = EditorGUI.EnumPopup( rect, enumValue );
+                for ( int i = 0; i < field.EnumNames.Length; i++ ) {
+                    if ( field.EnumNames[i] == enumValue.ToString() ) {
+                        field.EnumValue = i;
+                        break;
+                    }
+                }
+                break;
+            default:
+                EditorGUI.HelpBox( rect, string.Format( "The type {0} is not supported", field.RepresentableType ), MessageType.Warning );
+                break;
+        }
+    }
+
+    private void ShowWizard<T>( Rect rect, ExtendedEvent.Field field, string title, float width, float height ) where T : FieldWizard {
+        if ( GUI.Button( rect, "..." ) ) {
+            var wiz = ScriptableWizard.DisplayWizard<T>( title, "Close" );
+            //wiz.Property = property;
+            wiz.minSize = new Vector2( width, height );
+            wiz.maxSize = new Vector2( width, height );
+        }
+    }
+
 
     #region DropDown 
     private static int dropdownHash = "extDropDown".GetHashCode();
