@@ -160,118 +160,16 @@ public class ExtendedEvent {
 
     [Serializable]
     public class Field : MemberBase {
-        //public string Name;
-        //public string RepresentableType;
-        //public Type Type;
-        //public string TypeName;
-
-        //public string StringValue;
-        //public int IntValue;
-        //public float FloatValue;
-        //public double DoubleValue;
-        //public long LongValue;
-        //public bool BoolValue;
-        //public Vector2 Vector2Value;
-        //public Vector3 Vector3Value;
-        //public Vector4 Vector4Value;
-        //public Quaternion QuaternionValue;
-        //public Bounds BoundsValue;
-        //public Rect RectValue;
-        //public Matrix4x4 MatrixValue;
-        //public AnimationCurve AnimationCurveValue;
-        //public Color ColorValue;
-        //public UnityEngine.Object ObjectValue;
-
-        //public int EnumValue;
-        //public string[] EnumNames;
-
-        //[SerializeField]
-        //private string typeName;
-        //[SerializeField]
-        //private string assemblyName;
-        //[SerializeField]
-        //private string parentName;
 
         public Field() { }
 
         public Field( FieldInfo info, Type type )
             : base( info.Name, info.FieldType, type ) {
-            //Name = info.Name;
-            //Type = info.FieldType;
-            //TypeName = info.FieldType.Name;
-            //RepresentableType = GetTypeName( Type );
 
-            //typeName = info.FieldType.FullName;
-            //assemblyName = info.FieldType.Assembly.GetName().Name;
-
-
-            //if ( Type.IsSubclassOf( typeof( UnityEngine.Object ) ) ) {
-            //    TypeName = "Object";
-            //} else if ( Type.IsEnum ) {
-            //    TypeName = "Enum";
-            //    EnumNames = Enum.GetNames( Type );
-            //}
-
-            //parentName = type.Name;
-        }
-
-        public void Initialize() {
-            LoadType();
         }
 
         public void Invoke( GameObject item ) {
             object value = GetValue();
-
-            //switch ( TypeName ) {
-            //    case "String":
-            //        value = StringValue;
-            //        break;
-            //    case "Int32":
-            //        value = IntValue;
-            //        break;
-            //    case "Int64":
-            //        value = LongValue;
-            //        break;
-            //    case "Single":
-            //        value = FloatValue;
-            //        break;
-            //    case "Double":
-            //        value = DoubleValue;
-            //        break;
-            //    case "Boolean":
-            //        value = BoolValue;
-            //        break;
-            //    case "Vector2":
-            //        value = Vector2Value;
-            //        break;
-            //    case "Vector3":
-            //        value = Vector3Value;
-            //        break;
-            //    case "Vector4":
-            //        value = Vector4Value;
-            //        break;
-            //    case "Quaternion":
-            //        value = QuaternionValue;
-            //        break;
-            //    case "Bounds":
-            //        value = BoundsValue;
-            //        break;
-            //    case "Rect":
-            //        value = RectValue;
-            //        break;
-            //    case "Matrix4x4":
-            //        value = MatrixValue;
-            //        break;
-            //    case "AnimationCurve":
-            //        value = AnimationCurveValue;
-            //        break;
-            //    case "Object":
-            //        value = ObjectValue;
-            //        break;
-            //    case "Enum":
-            //        value = Enum.Parse( Type, EnumNames[EnumValue] );
-            //        break;
-            //}
 
             if ( parentName == "GameObject" ) {
                 var type = typeof( GameObject );
@@ -285,10 +183,6 @@ public class ExtendedEvent {
             }
         }
 
-        //public void LoadType() {
-        //    Type = Type.GetType( string.Format( "{0},{1}", typeName, assemblyName ) );
-        //}
-
         public override string ToString() {
             return string.Format( "{0}/Fields/{1} {2}", parentName, RepresentableType, Name );
         }
@@ -296,122 +190,20 @@ public class ExtendedEvent {
 
     [Serializable]
     public class Property : MemberBase {
-        //public string Name;
-        //public string RepresentableType;
-        //public Type Type;
-        //public string TypeName;
-
-        //public string StringValue;
-        //public int IntValue;
-        //public float FloatValue;
-        //public double DoubleValue;
-        //public long LongValue;
-        //public bool BoolValue;
-        //public Vector2 Vector2Value;
-        //public Vector3 Vector3Value;
-        //public Vector4 Vector4Value;
-        //public Quaternion QuaternionValue;
-        //public Bounds BoundsValue;
-        //public Rect RectValue;
-        //public Matrix4x4 MatrixValue;
-        //public AnimationCurve AnimationCurveValue;
-        //public Color ColorValue;
-        //public UnityEngine.Object ObjectValue;
-
-        //public int EnumValue;
-        //public string[] EnumNames;
-
-        //[SerializeField]
-        //private string typeName;
-        //[SerializeField]
-        //private string assemblyName;
-        //[SerializeField]
-        //private string parentName;
 
         public Property() { }
 
         public Property( PropertyInfo info, Type type )
             : base( info.Name, info.PropertyType, type ) {
-            //Name = info.Name;
-            //Type = info.PropertyType;
-            //TypeName = info.PropertyType.Name;
-            //RepresentableType = GetTypeName( Type );
-
-            //typeName = info.PropertyType.FullName;
-            //assemblyName = info.PropertyType.Assembly.GetName().Name;
-
-            //if ( Type.IsSubclassOf( typeof( Component ) ) ) {
-            //    TypeName = "Object";
-            //} else if ( Type.IsEnum ) {
-            //    TypeName = "Enum";
-            //    EnumNames = Enum.GetNames( Type );
-            //}
-
-            //parentName = type.Name;
-        }
-
-        public void Initialize() {
-            LoadType();
         }
 
         public void Invoke( GameObject item ) {
             object value = GetValue();
 
-            //switch ( TypeName ) {
-            //    case "String":
-            //        value = StringValue;
-            //        break;
-            //    case "Int32":
-            //        value = IntValue;
-            //        break;
-            //    case "Int64":
-            //        value = LongValue;
-            //        break;
-            //    case "Single":
-            //        value = FloatValue;
-            //        break;
-            //    case "Double":
-            //        value = DoubleValue;
-            //        break;
-            //    case "Boolean":
-            //        value = BoolValue;
-            //        break;
-            //    case "Vector2":
-            //        value = Vector2Value;
-            //        break;
-            //    case "Vector3":
-            //        value = Vector3Value;
-            //        break;
-            //    case "Vector4":
-            //        value = Vector4Value;
-            //        break;
-            //    case "Quaternion":
-            //        value = QuaternionValue;
-            //        break;
-            //    case "Bounds":
-            //        value = BoundsValue;
-            //        break;
-            //    case "Rect":
-            //        value = RectValue;
-            //        break;
-            //    case "Matrix4x4":
-            //        value = MatrixValue;
-            //        break;
-            //    case "AnimationCurve":
-            //        value = AnimationCurveValue;
-            //        break;
-            //    case "Object":
-            //        value = ObjectValue;
-            //        break;
-            //    case "Enum":
-            //        value = Enum.Parse( Type, EnumNames[EnumValue] );
-            //        break;
-            //}
-
             if ( parentName == "GameObject" ) {
                 var type = typeof( GameObject );
-                var field = type.GetProperty( Name, BindingFlags.Instance | BindingFlags.Public );
-                field.SetValue( item, value, null );
+                var property = type.GetProperty( Name, BindingFlags.Instance | BindingFlags.Public );
+                property.SetValue( item, value, null );
             } else {
                 var component = item.GetComponent( parentName );
                 var componentType = component.GetType();
@@ -420,10 +212,6 @@ public class ExtendedEvent {
             }
         }
 
-        //public void LoadType() {
-        //    Type = Type.GetType( string.Format( "{0},{1}", typeName, assemblyName ) );
-        //}
-
         public override string ToString() {
             return string.Format( "{0}/Properties/{1} {2}", parentName, RepresentableType, Name );
         }
@@ -431,63 +219,13 @@ public class ExtendedEvent {
 
     [Serializable]
     public class Parameter : MemberBase {
-        //public string Name;
-        //public string RepresentableType;
-        //public Type Type;
-        //public string TypeName;
-
-        //public string StringValue;
-        //public int IntValue;
-        //public float FloatValue;
-        //public double DoubleValue;
-        //public long LongValue;
-        //public bool BoolValue;
-        //public Vector2 Vector2Value;
-        //public Vector3 Vector3Value;
-        //public Vector4 Vector4Value;
-        //public Quaternion QuaternionValue;
-        //public Bounds BoundsValue;
-        //public Rect RectValue;
-        //public Matrix4x4 MatrixValue;
-        //public AnimationCurve AnimationCurveValue;
-        //public Color ColorValue;
-        //public UnityEngine.Object ObjectValue;
-
-        //public int EnumValue;
-        //public string[] EnumNames;
-
-        //[SerializeField]
-        //private string typeName;
-        //[SerializeField]
-        //private string assemblyName;
 
         public Parameter() { }
 
         public Parameter( ParameterInfo info )
             : base( info.Name, info.ParameterType, info.ParameterType ) {
-            Name = info.Name;
-            Type = info.ParameterType;
-            TypeName = info.ParameterType.Name;
-            RepresentableType = GetTypeName( Type );
 
-            typeName = info.ParameterType.FullName;
-            assemblyName = info.ParameterType.Assembly.GetName().Name;
-
-            if ( Type.IsSubclassOf( typeof( Component ) ) ) {
-                TypeName = "Object";
-            } else if ( Type.IsEnum ) {
-                TypeName = "Enum";
-                EnumNames = Enum.GetNames( Type );
-            }
         }
-
-        //public void Initialize() {
-        //    LoadType();
-        //}
-
-        //public void LoadType() {
-        //    Type = Type.GetType( string.Format( "{0},{1}", typeName, assemblyName ) );
-        //}
 
         public string ToStringLong() {
             return string.Format( "{0} {1}", RepresentableType, Name );
@@ -530,59 +268,7 @@ public class ExtendedEvent {
             var parameters = new object[Parameters.Count];
             for ( int i = 0; i < Parameters.Count; i++ ) {
                 var p = Parameters[i];
-
                 parameters[i] = p.GetValue();
-
-                //switch ( p.TypeName ) {
-                //    case "String":
-                //        parameters[i] = p.StringValue;
-                //        break;
-                //    case "Int32":
-                //        parameters[i] = p.IntValue;
-                //        break;
-                //    case "Int64":
-                //        parameters[i] = p.LongValue;
-                //        break;
-                //    case "Single":
-                //        parameters[i] = p.FloatValue;
-                //        break;
-                //    case "Double":
-                //        parameters[i] = p.DoubleValue;
-                //        break;
-                //    case "Boolean":
-                //        parameters[i] = p.BoolValue;
-                //        break;
-                //    case "Vector2":
-                //        parameters[i] = p.Vector2Value;
-                //        break;
-                //    case "Vector3":
-                //        parameters[i] = p.Vector3Value;
-                //        break;
-                //    case "Vector4":
-                //        parameters[i] = p.Vector4Value;
-                //        break;
-                //    case "Quaternion":
-                //        parameters[i] = p.QuaternionValue;
-                //        break;
-                //    case "Bounds":
-                //        parameters[i] = p.BoundsValue;
-                //        break;
-                //    case "Rect":
-                //        parameters[i] = p.RectValue;
-                //        break;
-                //    case "Matrix4x4":
-                //        parameters[i] = p.MatrixValue;
-                //        break;
-                //    case "AnimationCurve":
-                //        parameters[i] = p.AnimationCurveValue;
-                //        break;
-                //    case "Object":
-                //        parameters[i] = p.ObjectValue;
-                //        break;
-                //    case "Enum":
-                //        parameters[i] = Enum.Parse( p.Type, p.EnumNames[p.EnumValue] );
-                //        break;
-                //}
             }
 
             var mTypes = parameters.Select( p => p.GetType() );

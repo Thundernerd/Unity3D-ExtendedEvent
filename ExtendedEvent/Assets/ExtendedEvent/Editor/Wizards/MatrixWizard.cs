@@ -18,24 +18,13 @@ public class MatrixWizard : FieldWizard {
             EditorGUILayout.Space();
             EditorGUILayout.LabelField( label );
 
-            if ( Field != null ) {
-                switch ( matrixMode ) {
-                    case EMatrixMode.Column:
-                        Field.MatrixValue = DrawColumns( Field.MatrixValue );
-                        break;
-                    case EMatrixMode.Row:
-                        Field.MatrixValue = DrawRows( Field.MatrixValue );
-                        break;
-                }
-            } else {
-                switch ( matrixMode ) {
-                    case EMatrixMode.Column:
-                        Property.MatrixValue = DrawColumns( Property.MatrixValue );
-                        break;
-                    case EMatrixMode.Row:
-                        Property.MatrixValue = DrawRows( Property.MatrixValue );
-                        break;
-                }
+            switch ( matrixMode ) {
+                case EMatrixMode.Column:
+                    Member.MatrixValue = DrawColumns( Member.MatrixValue );
+                    break;
+                case EMatrixMode.Row:
+                    Member.MatrixValue = DrawRows( Member.MatrixValue );
+                    break;
             }
         } catch ( System.NullReferenceException ) {
             ended = true;
