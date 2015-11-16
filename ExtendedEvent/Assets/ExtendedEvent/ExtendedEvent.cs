@@ -7,7 +7,6 @@ using UnityEngine;
 [Serializable]
 public class ExtendedEvent {
 
-
     private static string GetTypeName( Type type ) {
         if ( type.Assembly.FullName.Contains( "Unity" ) ) {
             return type.Name;
@@ -63,6 +62,9 @@ public class ExtendedEvent {
         public Type Type;
         public string TypeName;
 
+        public object Vaalue;
+        public object[] Vaalues;
+
         public string StringValue;
         public int IntValue;
         public float FloatValue;
@@ -79,27 +81,13 @@ public class ExtendedEvent {
         public Color ColorValue;
         public UnityEngine.Object ObjectValue;
 
-        public string[] StringValues;
-        public int[] IntValues;
-        public long[] LongValues;
-        public float[] FloatValues;
-        public double[] DoubleValues;
-        public bool[] BoolValues;
-        public Vector2[] Vector2Values;
-        public Vector3[] Vector3Values;
-        public Vector4[] Vector4Values;
-        public Quaternion[] QuaternionValues;
-        public Bounds[] BoundsValues;
-        public Rect[] RectValues;
-        public AnimationCurve[] AnimationCurveValues;
-        public Color[] ColorValues;
-        public UnityEngine.Object[] ObjectValues;
-
         public int EnumValue;
         public string[] EnumNames;
 
-        public bool IsArray;
-
+        [SerializeField]
+        private string typeName;
+        [SerializeField]
+        private string assemblyName;
         [SerializeField]
         private string parentName;
 
@@ -108,16 +96,12 @@ public class ExtendedEvent {
         public Field( FieldInfo info, Type type ) {
             Name = info.Name;
             Type = info.FieldType;
-            TypeName = info.FieldType.Name.Replace( "[]", "" );
-            IsArray = info.FieldType.IsArray;
+            TypeName = info.FieldType.Name;
+            RepresentableType = GetTypeName( info.FieldType );
 
-            if ( IsArray ) {
-                string fullName = info.FieldType.FullName.Substring( 0, info.FieldType.FullName.Length - 2 );
-                var elementType = Type.GetType( string.Format( "{0},{1}", fullName, info.FieldType.Assembly.GetName().Name ) );
-                RepresentableType = GetTypeName( elementType ) + "[]";
-            } else {
-                RepresentableType = GetTypeName( info.FieldType );
-            }
+            typeName = info.FieldType.FullName;
+            assemblyName = info.FieldType.Assembly.GetName().Name;
+
 
             if ( info.FieldType.IsSubclassOf( typeof( UnityEngine.Object ) ) ) {
                 TypeName = "Object";
@@ -129,51 +113,55 @@ public class ExtendedEvent {
             parentName = type.Name;
         }
 
+        public void Initialize() {
+            LoadType();
+        }
+
         public void Invoke( GameObject item ) {
             object value = null;
 
             switch ( TypeName ) {
                 case "String":
-                    value = IsArray ? (object)StringValues : StringValue;
+                    value = StringValue;
                     break;
                 case "Int32":
-                    value = IsArray ? (object)IntValues : IntValue;
+                    value = IntValue;
                     break;
                 case "Int64":
-                    value = IsArray ? (object)LongValues : LongValue;
+                    value = LongValue;
                     break;
                 case "Single":
-                    value = IsArray ? (object)FloatValue : FloatValue;
+                    value = FloatValue;
                     break;
                 case "Double":
-                    value = IsArray ? (object)DoubleValues : DoubleValue;
+                    value = DoubleValue;
                     break;
                 case "Boolean":
-                    value = IsArray ? (object)BoolValues : BoolValue;
+                    value = BoolValue;
                     break;
                 case "Vector2":
-                    value = IsArray ? (object)Vector2Values : Vector2Value;
+                    value = Vector2Value;
                     break;
                 case "Vector3":
-                    value = IsArray ? (object)Vector3Values : Vector3Value;
+                    value = Vector3Value;
                     break;
                 case "Vector4":
-                    value = IsArray ? (object)Vector4Values : Vector4Value;
+                    value = Vector4Value;
                     break;
                 case "Quaternion":
-                    value = IsArray ? (object)QuaternionValues : QuaternionValue;
+                    value = QuaternionValue;
                     break;
                 case "Bounds":
-                    value = IsArray ? (object)BoundsValues : BoundsValue;
+                    value = BoundsValue;
                     break;
                 case "Rect":
-                    value = IsArray ? (object)RectValues : RectValue;
+                    value = RectValue;
                     break;
                 case "AnimationCurve":
-                    value = IsArray ? (object)AnimationCurveValues : AnimationCurveValue;
+                    value = AnimationCurveValue;
                     break;
                 case "Object":
-                    value = IsArray ? (object)ObjectValues : ObjectValue;
+                    value = ObjectValue;
                     break;
                 case "Enum":
                     value = Enum.Parse( Type, EnumNames[EnumValue] );
@@ -190,6 +178,10 @@ public class ExtendedEvent {
                 var field = componentType.GetField( Name );
                 field.SetValue( component, value );
             }
+        }
+
+        public void LoadType() {
+            Type = Type.GetType( string.Format( "{0},{1}", typeName, assemblyName ) );
         }
 
         public override string ToString() {
@@ -435,6 +427,12 @@ public class ExtendedEvent {
 
         public GameObjectContainer( GameObject gObj ) {
             Reset( gObj );
+        }
+
+        public void Initialize() {
+            foreach ( var item in Fields ) {
+                item.Initialize();
+            }
         }
 
         public void Reset( GameObject gObj ) {

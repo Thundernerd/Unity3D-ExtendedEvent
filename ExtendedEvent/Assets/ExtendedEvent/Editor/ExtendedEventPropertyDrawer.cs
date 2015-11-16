@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEditorInternal;
@@ -21,6 +20,9 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
             var type = target.GetType();
             var field = type.GetField( property.name );
             eEvent = field.GetValue( target ) as ExtendedEvent;
+            foreach ( var item in eEvent.Listeners ) {
+                item.Initialize();
+            }
 
             rList = new ReorderableList( eEvent.Listeners, typeof( ExtendedEvent.GameObjectContainer ) );
             rList.draggable = false;
@@ -84,9 +86,11 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
                     break;
                 case 1:
                     var property = listener.CurrentProperty;
+                    DrawProperty( property, bottomRect );
                     break;
                 case 2:
                     var method = listener.CurrentMethod;
+                    DrawMethod( method, bottomRect );
                     break;
             }
         }
@@ -95,11 +99,6 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
     private void DrawField( ExtendedEvent.Field field, Rect rect ) {
         rect.yMax += 3;
         rect.yMin += 3;
-
-        if (field.IsArray) {
-            ShowWizard<ArrayWizard>( rect, field, "Array Editor", 405, 115 );
-            return;
-        }
 
         switch ( field.TypeName ) {
             case "String":
@@ -137,10 +136,10 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
                 field.QuaternionValue = new Quaternion( v4.x, v4.y, v4.z, v4.w );
                 break;
             case "Bounds":
-                ShowWizard<BoundsWizard>( rect, field, "Bounds Editor", 405, 115 );
+                ShowWizard<BoundsWizard>( rect, field, "Bounds Editor", 405, 130 );
                 break;
             case "Rect":
-                ShowWizard<RectWizard>( rect, field, "Rect Editor", 350, 115 );
+                ShowWizard<RectWizard>( rect, field, "Rect Editor", 350, 130 );
                 break;
             case "AnimationCurve":
                 field.AnimationCurveValue = EditorGUI.CurveField( rect, field.AnimationCurveValue );
@@ -164,10 +163,18 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         }
     }
 
+    private void DrawProperty( ExtendedEvent.Property property, Rect rect ) {
+
+    }
+
+    private void DrawMethod( ExtendedEvent.Method method, Rect rect ) {
+
+    }
+
     private void ShowWizard<T>( Rect rect, ExtendedEvent.Field field, string title, float width, float height ) where T : FieldWizard {
         if ( GUI.Button( rect, "..." ) ) {
             var wiz = ScriptableWizard.DisplayWizard<T>( title, "Close" );
-            //wiz.Property = property;
+            wiz.Field = field;
             wiz.minSize = new Vector2( width, height );
             wiz.maxSize = new Vector2( width, height );
         }
