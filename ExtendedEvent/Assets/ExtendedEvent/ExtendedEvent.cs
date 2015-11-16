@@ -7,6 +7,7 @@ using UnityEngine;
 [Serializable]
 public class ExtendedEvent {
 
+
     private static string GetTypeName( Type type ) {
         if ( type.Assembly.FullName.Contains( "Unity" ) ) {
             return type.Name;
@@ -59,10 +60,45 @@ public class ExtendedEvent {
     public class Field {
         public string Name;
         public string RepresentableType;
-        public string NewValue;
-        public string Type;
-        public string Assembly;
-        public UnityEngine.Object Object;
+        public Type Type;
+        public string TypeName;
+
+        public string StringValue;
+        public int IntValue;
+        public float FloatValue;
+        public double DoubleValue;
+        public long LongValue;
+        public bool BoolValue;
+        public Vector2 Vector2Value;
+        public Vector3 Vector3Value;
+        public Vector4 Vector4Value;
+        public Quaternion QuaternionValue;
+        public Bounds BoundsValue;
+        public Rect RectValue;
+        public AnimationCurve AnimationCurveValue;
+        public Color ColorValue;
+        public UnityEngine.Object ObjectValue;
+
+        public string[] StringValues;
+        public int[] IntValues;
+        public long[] LongValues;
+        public float[] FloatValues;
+        public double[] DoubleValues;
+        public bool[] BoolValues;
+        public Vector2[] Vector2Values;
+        public Vector3[] Vector3Values;
+        public Vector4[] Vector4Values;
+        public Quaternion[] QuaternionValues;
+        public Bounds[] BoundsValues;
+        public Rect[] RectValues;
+        public AnimationCurve[] AnimationCurveValues;
+        public Color[] ColorValues;
+        public UnityEngine.Object[] ObjectValues;
+
+        public int EnumValue;
+        public string[] EnumNames;
+
+        public bool IsArray;
 
         [SerializeField]
         private string parentName;
@@ -71,64 +107,77 @@ public class ExtendedEvent {
 
         public Field( FieldInfo info, Type type ) {
             Name = info.Name;
-            Assembly = info.FieldType.Assembly.FullName;
-            Type = info.FieldType.FullName;
-            RepresentableType = GetTypeName( info.FieldType );
+            Type = info.FieldType;
+            TypeName = info.FieldType.Name.Replace( "[]", "" );
+            IsArray = info.FieldType.IsArray;
 
-            try {
-                if ( info.FieldType.IsSubclassOf( typeof( Component ) ) ) {
-                    NewValue = "";
-                } else {
-                    NewValue = Activator.CreateInstance( info.FieldType ).ToString();
-                    Object = (UnityEngine.Object)Activator.CreateInstance( info.FieldType );
-                }
-            } catch ( Exception ) {
-                // Catch 'm all just in case (bad habit, I am aware)
+            if ( IsArray ) {
+                string fullName = info.FieldType.FullName.Substring( 0, info.FieldType.FullName.Length - 2 );
+                var elementType = Type.GetType( string.Format( "{0},{1}", fullName, info.FieldType.Assembly.GetName().Name ) );
+                RepresentableType = GetTypeName( elementType ) + "[]";
+            } else {
+                RepresentableType = GetTypeName( info.FieldType );
+            }
+
+            if ( info.FieldType.IsSubclassOf( typeof( UnityEngine.Object ) ) ) {
+                TypeName = "Object";
+            } else if ( info.FieldType.IsEnum ) {
+                TypeName = "Enum";
+                EnumNames = Enum.GetNames( info.FieldType );
             }
 
             parentName = type.Name;
         }
 
         public void Invoke( GameObject item ) {
-            var a = System.Reflection.Assembly.Load( Assembly );
-            var t = a.GetType( Type );
-
             object value = null;
 
-            if ( t == typeof( int ) ) {
-                value = int.Parse( NewValue );
-            } else if ( t == typeof( float ) ) {
-                value = float.Parse( NewValue );
-            } else if ( t == typeof( double ) ) {
-                value = double.Parse( NewValue );
-            } else if ( t == typeof( long ) ) {
-                value = long.Parse( NewValue );
-            } else if ( t == typeof( string ) ) {
-                value = NewValue;
-            } else if ( t == typeof( bool ) ) {
-                value = bool.Parse( NewValue );
-            } else if ( t == typeof( Vector2 ) ) {
-                value = ExtendedEventConverter.Vec2( NewValue );
-            } else if ( t == typeof( Vector3 ) ) {
-                value = ExtendedEventConverter.Vec3( NewValue );
-            } else if ( t == typeof( Vector4 ) ) {
-                value = ExtendedEventConverter.Vec4( NewValue );
-            } else if ( t == typeof( Quaternion ) ) {
-                value = ExtendedEventConverter.Quat( NewValue );
-            } else if ( t == typeof( GameObject ) ) {
-                value = GameObject.Find( NewValue );
-            } else if ( t == typeof( Bounds ) ) {
-                value = ExtendedEventConverter.Bounds( NewValue );
-            } else if ( t == typeof( Rect ) ) {
-                value = ExtendedEventConverter.Rect( NewValue );
-            } else if ( t == typeof( Color ) ) {
-                value = ExtendedEventConverter.Color( NewValue );
-            } else if ( t == typeof( AnimationCurve ) ) {
-                value = ExtendedEventConverter.Curve( NewValue );
-            } else if ( t.IsSubclassOf( typeof( Enum ) ) ) {
-                value = Enum.Parse( t, NewValue );
-            } else if ( t.IsSubclassOf( typeof( UnityEngine.Object ) ) ) {
-                value = Object;
+            switch ( TypeName ) {
+                case "String":
+                    value = IsArray ? (object)StringValues : StringValue;
+                    break;
+                case "Int32":
+                    value = IsArray ? (object)IntValues : IntValue;
+                    break;
+                case "Int64":
+                    value = IsArray ? (object)LongValues : LongValue;
+                    break;
+                case "Single":
+                    value = IsArray ? (object)FloatValue : FloatValue;
+                    break;
+                case "Double":
+                    value = IsArray ? (object)DoubleValues : DoubleValue;
+                    break;
+                case "Boolean":
+                    value = IsArray ? (object)BoolValues : BoolValue;
+                    break;
+                case "Vector2":
+                    value = IsArray ? (object)Vector2Values : Vector2Value;
+                    break;
+                case "Vector3":
+                    value = IsArray ? (object)Vector3Values : Vector3Value;
+                    break;
+                case "Vector4":
+                    value = IsArray ? (object)Vector4Values : Vector4Value;
+                    break;
+                case "Quaternion":
+                    value = IsArray ? (object)QuaternionValues : QuaternionValue;
+                    break;
+                case "Bounds":
+                    value = IsArray ? (object)BoundsValues : BoundsValue;
+                    break;
+                case "Rect":
+                    value = IsArray ? (object)RectValues : RectValue;
+                    break;
+                case "AnimationCurve":
+                    value = IsArray ? (object)AnimationCurveValues : AnimationCurveValue;
+                    break;
+                case "Object":
+                    value = IsArray ? (object)ObjectValues : ObjectValue;
+                    break;
+                case "Enum":
+                    value = Enum.Parse( Type, EnumNames[EnumValue] );
+                    break;
             }
 
             if ( parentName == "GameObject" ) {
@@ -575,8 +624,37 @@ public class ExtendedEvent {
             }
         }
 
-        public bool IsMethod() {
-            return Index - 1 >= Fields.Count;
+        public int Type {
+            get {
+                var splits = List[Index].text.Split( '/' );
+                switch ( splits[1] ) {
+                    case "Fields":
+                        return 0;
+                    case "Properties":
+                        return 1;
+                    case "Methods":
+                        return 2;
+                }
+                return -1;
+            }
+        }
+
+        public Field CurrentField {
+            get {
+                return Fields[Indeces[Index]];
+            }
+        }
+
+        public Property CurrentProperty {
+            get {
+                return Properties[Indeces[Index]];
+            }
+        }
+
+        public Method CurrentMethod {
+            get {
+                return Methods[Indeces[Index]];
+            }
         }
     }
 
