@@ -3,7 +3,8 @@ using UnityEditor;
 
 public class FieldWizard : ScriptableWizard {
 
-    public ExtendedEvent.MemberBase Member;
+    public ExtendedEvent.Member Member;
+    public ExtendedEvent.Parameter Parameter;
 
     protected string label = "";
     protected bool ended = false;
@@ -12,10 +13,14 @@ public class FieldWizard : ScriptableWizard {
     protected virtual void Initialize() { }
 
     protected override sealed bool DrawWizardGUI() {
-        if ( Member == null ) return false;
+        if ( Member == null && Parameter == null ) return false;
 
         if ( string.IsNullOrEmpty( label ) ) {
-            DisplayName( Member.Name );
+            if (Member == null ) {
+                DisplayName( Parameter.Name );
+            } else {
+                DisplayName( Member.Name );
+            }
         }
 
         if ( !initialized ) {
@@ -32,7 +37,6 @@ public class FieldWizard : ScriptableWizard {
     public void OnWizardCreate() { }
 
     protected void DisplayName( string item ) {
-        var splits = new List<string>();
         var displayName = "";
 
         for ( int i = 0, j = 0; i < item.Length; i++ ) {

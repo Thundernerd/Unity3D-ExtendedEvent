@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -55,9 +56,17 @@ public class ExtendedEvent {
         }
     }
 
+    public enum EMemberType {
+        Field,
+        Property,
+        Method,
+        None
+    }
+
     [Serializable]
-    public class MemberBase {
+    public class Parameter {
         public string Name;
+        public string DisplayName;
         public string RepresentableType;
         public Type Type;
         public string TypeName;
@@ -89,25 +98,29 @@ public class ExtendedEvent {
         [SerializeField]
         protected string parentName;
 
-        public MemberBase() { }
+        public Parameter() { }
 
-        public MemberBase( string name, Type infoType, Type type ) {
-            Name = name;
-            Type = infoType;
-            TypeName = infoType.Name;
-            RepresentableType = GetTypeName( infoType );
+        public Parameter( ParameterInfo info ) {
+            Name = info.Name;
+            Type = info.ParameterType;
+            TypeName = info.ParameterType.Name;
+            RepresentableType = GetTypeName( Type );
 
-            typeName = infoType.FullName;
-            assemblyName = infoType.Assembly.GetName().Name;
+            typeName = info.ParameterType.FullName;
+            assemblyName = info.ParameterType.Assembly.GetName().Name;
 
-            if ( Type.IsSubclassOf( typeof( UnityEngine.Object ) ) ) {
+            if ( Type.IsSubclassOf( typeof( Component ) ) ) {
                 TypeName = "Object";
             } else if ( Type.IsEnum ) {
                 TypeName = "Enum";
                 EnumNames = Enum.GetNames( Type );
             }
 
-            parentName = type.Name;
+            SetDisplayName();
+        }
+
+        public void Initialize() {
+            LoadType();
         }
 
         public object GetValue() {
@@ -149,26 +162,171 @@ public class ExtendedEvent {
             return null;
         }
 
+        public void LoadType() {
+            Type = Type.GetType( string.Format( "{0},{1}", typeName, assemblyName ) );
+        }
+
+        public void SetDisplayName() {
+            var displayName = "";
+
+            for ( int i = 0, j = 0; i < Name.Length; i++ ) {
+                if ( i > 0 && char.IsUpper( Name[i] ) ) {
+                    displayName += " " + Name.Substring( j, i - j );
+                    j = i;
+                }
+
+                if ( i == Name.Length - 1 ) {
+                    displayName += " " + Name.Substring( j, i - j + 1 );
+                }
+            }
+
+            DisplayName = displayName.Trim();
+            DisplayName = string.Format( "{0}{1}", char.ToUpper( DisplayName[0] ), DisplayName.Substring( 1 ) );
+        }
+
+        public override string ToString() {
+            return string.Format( "{0} {1}", RepresentableType, Name );
+        }
+    }
+
+    [Serializable]
+    public class Member {
+        public string Name;
+        public string RepresentableType;
+        public Type Type;
+        public string TypeName;
+        public EMemberType MemberType = EMemberType.None;
+
+        public string StringValue;
+        public int IntValue;
+        public float FloatValue;
+        public double DoubleValue;
+        public long LongValue;
+        public bool BoolValue;
+        public Vector2 Vector2Value;
+        public Vector3 Vector3Value;
+        public Vector4 Vector4Value;
+        public Quaternion QuaternionValue;
+        public Bounds BoundsValue;
+        public Rect RectValue;
+        public Matrix4x4 MatrixValue;
+        public AnimationCurve AnimationCurveValue;
+        public Color ColorValue;
+        public UnityEngine.Object ObjectValue;
+
+        public int EnumValue;
+        public string[] EnumNames;
+
+        // It's dirty to put it in here but Unity doesn't give me another choice
+        // It wont save the object as it's derived type but as the base type
+        public List<Parameter> Parameters;
+
+        [SerializeField]
+        protected string typeName;
+        [SerializeField]
+        protected string assemblyName;
+        [SerializeField]
+        protected string parentName;
+
+        public Member() { }
+
+        public Member( MemberInfo info, Type infoType, Type type, EMemberType memberType ) {
+            Name = info.Name;
+            Type = infoType;
+            TypeName = infoType.Name;
+            RepresentableType = GetTypeName( infoType );
+            MemberType = memberType;
+
+            typeName = infoType.FullName;
+            assemblyName = infoType.Assembly.GetName().Name;
+
+            if ( Type.IsSubclassOf( typeof( UnityEngine.Object ) ) ) {
+                TypeName = "Object";
+            } else if ( Type.IsEnum ) {
+                TypeName = "Enum";
+                EnumNames = Enum.GetNames( Type );
+            }
+
+            parentName = type.Name;
+        }
+
+        public Member( MethodInfo info, Type infoType, Type type, ParameterInfo[] parameters )
+            : this( info, infoType, type, EMemberType.Method ) {
+            Parameters = new List<Parameter>();
+
+            foreach ( var p in parameters ) {
+                Parameters.Add( new Parameter( p ) );
+            }
+        }
+
         public void Initialize() {
             LoadType();
+
+            if ( MemberType == EMemberType.Method ) {
+                foreach ( var item in Parameters ) {
+                    item.Initialize();
+                }
+            }
         }
 
         public void LoadType() {
             Type = Type.GetType( string.Format( "{0},{1}", typeName, assemblyName ) );
         }
-    }
 
-    [Serializable]
-    public class Field : MemberBase {
+        public object GetValue() {
+            switch ( TypeName ) {
+                case "String":
+                    return StringValue;
+                case "Int32":
+                    return IntValue;
+                case "Int64":
+                    return LongValue;
+                case "Single":
+                    return FloatValue;
+                case "Double":
+                    return DoubleValue;
+                case "Boolean":
+                    return BoolValue;
+                case "Vector2":
+                    return Vector2Value;
+                case "Vector3":
+                    return Vector3Value;
+                case "Vector4":
+                    return Vector4Value;
+                case "Quaternion":
+                    return QuaternionValue;
+                case "Bounds":
+                    return BoundsValue;
+                case "Rect":
+                    return RectValue;
+                case "Matrix4x4":
+                    return MatrixValue;
+                case "AnimationCurve":
+                    return AnimationCurveValue;
+                case "Object":
+                    return ObjectValue;
+                case "Enum":
+                    return Enum.Parse( Type, EnumNames[EnumValue] );
+            }
 
-        public Field() { }
-
-        public Field( FieldInfo info, Type type )
-            : base( info.Name, info.FieldType, type ) {
-
+            return null;
         }
 
         public void Invoke( GameObject item ) {
+            switch ( MemberType ) {
+                case EMemberType.Field:
+                    InvokeField( item );
+                    break;
+                case EMemberType.Property:
+                    InvokeProperty( item );
+                    break;
+                case EMemberType.Method:
+                    InvokeMethod( item );
+                    break;
+            }
+        }
+
+        private void InvokeField( GameObject item ) {
             object value = GetValue();
 
             if ( parentName == "GameObject" ) {
@@ -183,21 +341,7 @@ public class ExtendedEvent {
             }
         }
 
-        public override string ToString() {
-            return string.Format( "{0}/Fields/{1} {2}", parentName, RepresentableType, Name );
-        }
-    }
-
-    [Serializable]
-    public class Property : MemberBase {
-
-        public Property() { }
-
-        public Property( PropertyInfo info, Type type )
-            : base( info.Name, info.PropertyType, type ) {
-        }
-
-        public void Invoke( GameObject item ) {
+        private void InvokeProperty( GameObject item ) {
             object value = GetValue();
 
             if ( parentName == "GameObject" ) {
@@ -212,59 +356,7 @@ public class ExtendedEvent {
             }
         }
 
-        public override string ToString() {
-            return string.Format( "{0}/Properties/{1} {2}", parentName, RepresentableType, Name );
-        }
-    }
-
-    [Serializable]
-    public class Parameter : MemberBase {
-
-        public Parameter() { }
-
-        public Parameter( ParameterInfo info )
-            : base( info.Name, info.ParameterType, info.ParameterType ) {
-
-        }
-
-        public string ToStringLong() {
-            return string.Format( "{0} {1}", RepresentableType, Name );
-        }
-
-        public string ToStringShort() {
-            return RepresentableType;
-        }
-    }
-
-    [Serializable]
-    public class Method {
-        public string Name;
-        public List<Parameter> Parameters;
-
-        [SerializeField]
-        private string parentName;
-
-        public Method() { }
-
-        public Method( MethodInfo info, Type type ) {
-            Name = info.Name;
-            Parameters = new List<Parameter>();
-
-            var parameters = info.GetParameters();
-            foreach ( var p in parameters ) {
-                Parameters.Add( new Parameter( p ) );
-            }
-
-            parentName = type.Name;
-        }
-
-        public void Initialize() {
-            foreach ( var item in Parameters ) {
-                item.Initialize();
-            }
-        }
-
-        public void Invoke( GameObject item ) {
+        private void InvokeMethod( GameObject item ) {
             var parameters = new object[Parameters.Count];
             for ( int i = 0; i < Parameters.Count; i++ ) {
                 var p = Parameters[i];
@@ -285,14 +377,83 @@ public class ExtendedEvent {
             }
         }
 
-        public override string ToString() {
-            var parameters = "";
-            foreach ( var item in Parameters ) {
-                parameters += string.Format( "{0}, ", item.ToStringShort() );
+        public void CopyValue( Member other ) {
+            if ( MemberType == EMemberType.Method ) {
+                Parameters = other.Parameters;
+            } else {
+                switch ( TypeName ) {
+                    case "String":
+                        StringValue = other.StringValue;
+                        break;
+                    case "Int32":
+                        IntValue = other.IntValue;
+                        break;
+                    case "Int64":
+                        LongValue = other.LongValue;
+                        break;
+                    case "Single":
+                        FloatValue = other.FloatValue;
+                        break;
+                    case "Double":
+                        DoubleValue = other.DoubleValue;
+                        break;
+                    case "Boolean":
+                        BoolValue = other.BoolValue;
+                        break;
+                    case "Vector2":
+                        Vector2Value = other.Vector2Value;
+                        break;
+                    case "Vector3":
+                        Vector3Value = other.Vector3Value;
+                        break;
+                    case "Vector4":
+                        Vector4Value = other.Vector4Value;
+                        break;
+                    case "Quaternion":
+                        QuaternionValue = other.QuaternionValue;
+                        break;
+                    case "Bounds":
+                        BoundsValue = other.BoundsValue;
+                        break;
+                    case "Rect":
+                        RectValue = other.RectValue;
+                        break;
+                    case "Matrix4x4":
+                        MatrixValue = other.MatrixValue;
+                        break;
+                    case "AnimationCurve":
+                        AnimationCurveValue = other.AnimationCurveValue;
+                        break;
+                    case "Object":
+                        ObjectValue = other.ObjectValue;
+                        break;
+                    case "Enum":
+                        EnumValue = other.EnumValue;
+                        EnumNames = other.EnumNames;
+                        break;
+                }
             }
-            parameters = parameters.TrimEnd( ',', ' ' );
+        }
 
-            return string.Format( "{2}/Methods/{0} ({1})", Name, parameters, parentName );
+        public override string ToString() {
+            switch ( MemberType ) {
+                case EMemberType.Field:
+                    return string.Format( "{0}/Fields/{1} {2}", parentName, RepresentableType, Name );
+                case EMemberType.Property:
+                    return string.Format( "{0}/Properties/{1} {2}", parentName, RepresentableType, Name );
+                case EMemberType.Method:
+                    {
+                        var parameters = "";
+                        foreach ( var item in Parameters ) {
+                            parameters += string.Format( "{0}, ", item.ToString() );
+                        }
+                        parameters = parameters.TrimEnd( ',', ' ' );
+
+                        return string.Format( "{2}/Methods/{0} ({1})", Name, parameters, parentName );
+                    }
+            }
+
+            return base.ToString();
         }
     }
 
@@ -300,12 +461,9 @@ public class ExtendedEvent {
     public class GameObjectContainer {
         public GameObject GameObject;
 
-        public List<Field> Fields = new List<Field>();
-        public List<Property> Properties = new List<Property>();
-        public List<Method> Methods = new List<Method>();
+        public List<Member> Members = new List<Member>();
 
         public GUIContent[] List = new GUIContent[0];
-        public List<int> Indeces = new List<int>();
         public int Index = 0;
 
         public GameObjectContainer() { }
@@ -315,14 +473,25 @@ public class ExtendedEvent {
         }
 
         public void Initialize() {
-            foreach ( var item in Fields ) {
+            foreach ( var item in Members ) {
                 item.Initialize();
             }
-            foreach ( var item in Properties ) {
-                item.Initialize();
-            }
-            foreach ( var item in Methods ) {
-                item.Initialize();
+
+            if ( Index > 1 ) {
+                var tempText = List[Index].text;
+                var tempMember = Members[Index];
+
+                Reset();
+
+                for ( int i = 0; i < Members.Count; i++ ) {
+                    var item = Members[i];
+                    if ( item == null ) continue;
+                    if ( item.ToString() == tempText ) {
+                        Index = i;
+                        item.CopyValue( tempMember );
+                        break;
+                    }
+                }
             }
         }
 
@@ -335,13 +504,10 @@ public class ExtendedEvent {
             var obsoleteType = typeof( ObsoleteAttribute );
             var objectType = typeof( UnityEngine.Object );
 
-            Fields.Clear();
-            Properties.Clear();
-            Methods.Clear();
-
-            Indeces.Clear();
-            Indeces.Add( 0 );
-            Indeces.Add( 0 );
+            Members.Clear();
+            // Add two null objects to fill in the blanks for "Nothing Selected" and ""
+            Members.Add( null );
+            Members.Add( null );
 
             Index = 0;
 
@@ -393,24 +559,21 @@ public class ExtendedEvent {
                 gMethods.Sort( ( m1, m2 ) => m1.Name.CompareTo( m2.Name ) );
 
                 foreach ( var f in gFields ) {
-                    var field = new Field( f, gType );
-                    Indeces.Add( Fields.Count );
+                    var field = new Member( f, f.FieldType, gType, EMemberType.Field );
                     tempList.Add( new GUIContent( field.ToString() ) );
-                    Fields.Add( field );
+                    Members.Add( field );
                 }
 
                 foreach ( var p in gProperties ) {
-                    var property = new Property( p, gType );
-                    Indeces.Add( Properties.Count );
+                    var property = new Member( p, p.PropertyType, gType, EMemberType.Property );
                     tempList.Add( new GUIContent( property.ToString() ) );
-                    Properties.Add( property );
+                    Members.Add( property );
                 }
 
                 foreach ( var m in gMethods ) {
-                    var method = new Method( m, gType );
-                    Indeces.Add( Methods.Count );
+                    var method = new Member( m, m.ReflectedType, gType, m.GetParameters() );
                     tempList.Add( new GUIContent( method.ToString() ) );
-                    Methods.Add( method );
+                    Members.Add( method );
                 }
             }
 
@@ -470,24 +633,21 @@ public class ExtendedEvent {
                 methods.Sort( ( m1, m2 ) => m1.Name.CompareTo( m2.Name ) );
 
                 foreach ( var f in fields ) {
-                    var field = new Field( f, type );
-                    Indeces.Add( Fields.Count );
+                    var field = new Member( f, f.FieldType, type, EMemberType.Field );
                     tempList.Add( new GUIContent( field.ToString() ) );
-                    Fields.Add( field );
+                    Members.Add( field );
                 }
 
                 foreach ( var p in properties ) {
-                    var property = new Property( p, type );
-                    Indeces.Add( Properties.Count );
+                    var property = new Member( p, p.PropertyType, type, EMemberType.Property );
                     tempList.Add( new GUIContent( property.ToString() ) );
-                    Properties.Add( property );
+                    Members.Add( property );
                 }
 
                 foreach ( var m in methods ) {
-                    var method = new Method( m, type );
-                    Indeces.Add( Methods.Count );
+                    var method = new Member( m, m.ReflectedType, type, m.GetParameters() );
                     tempList.Add( new GUIContent( method.ToString() ) );
-                    Methods.Add( method );
+                    Members.Add( method );
                 }
             }
 
@@ -499,50 +659,22 @@ public class ExtendedEvent {
         public void Invoke() {
             if ( Index < 2 ) return;
 
-            var splits = List[Index].text.Split( '/' );
-            switch ( splits[1] ) {
-                case "Fields":
-                    Fields[Indeces[Index]].Invoke( GameObject );
-                    break;
-                case "Properties":
-                    Properties[Indeces[Index]].Invoke( GameObject );
-                    break;
-                case "Methods":
-                    Methods[Indeces[Index]].Invoke( GameObject );
-                    break;
-            }
+            Members[Index].Invoke( GameObject );
         }
 
-        public int Type {
+        public EMemberType Type {
             get {
                 var splits = List[Index].text.Split( '/' );
                 switch ( splits[1] ) {
                     case "Fields":
-                        return 0;
+                        return EMemberType.Field;
                     case "Properties":
-                        return 1;
+                        return EMemberType.Property;
                     case "Methods":
-                        return 2;
+                        return EMemberType.Method;
                 }
-                return -1;
-            }
-        }
 
-        public Field CurrentField {
-            get {
-                return Fields[Indeces[Index]];
-            }
-        }
-
-        public Property CurrentProperty {
-            get {
-                return Properties[Indeces[Index]];
-            }
-        }
-
-        public Method CurrentMethod {
-            get {
-                return Methods[Indeces[Index]];
+                return EMemberType.None;
             }
         }
     }

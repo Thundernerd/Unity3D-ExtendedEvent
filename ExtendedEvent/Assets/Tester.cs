@@ -24,6 +24,9 @@ public class Tester : MonoBehaviour {
         Debug.LogError( trans );
         Debug.LogError( rect );
         Debug.LogError( b );
+    }
+
+    public void Doti( int a, Matrix4x4 b, float c, Matrix4x4 d, double e ) {
 
     }
 }

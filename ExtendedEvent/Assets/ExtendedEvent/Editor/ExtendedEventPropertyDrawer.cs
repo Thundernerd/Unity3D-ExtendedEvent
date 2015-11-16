@@ -70,6 +70,7 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         var bottomRect = new Rect( rect.x, rect.y + halfHeight, rect.width, halfHeight );
 
         EditorGUI.BeginChangeCheck();
+        GUI.Box( gameObjectRect, "" );
         listener.GameObject = (GameObject)EditorGUI.ObjectField( gameObjectRect, listener.GameObject, typeof( GameObject ), true );
         if ( EditorGUI.EndChangeCheck() ) {
             listener.Reset();
@@ -80,23 +81,18 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
 
         if ( i > 1 && listener.GameObject != null ) {
             switch ( listener.Type ) {
-                case 0:
-                    var field = listener.CurrentField;
-                    DrawMember( field, bottomRect );
+                case ExtendedEvent.EMemberType.Field:
+                case ExtendedEvent.EMemberType.Property:
+                    DrawMember( listener.Members[listener.Index], bottomRect );
                     break;
-                case 1:
-                    var property = listener.CurrentProperty;
-                    DrawMember( property, bottomRect );
-                    break;
-                case 2:
-                    var method = listener.CurrentMethod;
-                    DrawMethod( method, bottomRect );
+                case ExtendedEvent.EMemberType.Method:
+                    DrawMethod( listener.Members[listener.Index], bottomRect );
                     break;
             }
         }
     }
 
-    private void DrawMember( ExtendedEvent.MemberBase member, Rect rect ) {
+    private void DrawMember( ExtendedEvent.Member member, Rect rect ) {
         rect.yMax += 3;
         rect.yMin += 3;
 
@@ -142,7 +138,7 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
                 ShowWizard<RectWizard>( rect, member, "Rect Editor", 350, 130 );
                 break;
             case "Matrix4x4":
-                ShowWizard<MatrixWizard>( rect, member, "Matrix Editor", 350, 275 );
+                ShowWizard<MatrixWizard>( rect, member, "Matrix Editor", 375, 175 );
                 break;
             case "AnimationCurve":
                 member.AnimationCurveValue = EditorGUI.CurveField( rect, member.AnimationCurveValue );
@@ -166,10 +162,76 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         }
     }
 
-    private void DrawMethod( ExtendedEvent.Method method, Rect rect ) {
+    private void DrawMethod( ExtendedEvent.Member method, Rect rect ) {
         if ( method.Parameters.Count == 1 ) {
             var parameter = method.Parameters[0];
-            DrawMember( parameter, rect );
+            rect.yMax += 3;
+            rect.yMin += 3;
+
+            switch ( parameter.TypeName ) {
+                case "String":
+                    parameter.StringValue = EditorGUI.TextField( rect, parameter.StringValue );
+                    break;
+                case "Int32":
+                    parameter.IntValue = EditorGUI.IntField( rect, parameter.IntValue );
+                    break;
+                case "Int64":
+                    parameter.LongValue = EditorGUI.LongField( rect, parameter.LongValue );
+                    break;
+                case "Single":
+                    parameter.FloatValue = EditorGUI.FloatField( rect, parameter.FloatValue );
+                    break;
+                case "Double":
+                    parameter.DoubleValue = EditorGUI.DoubleField( rect, parameter.DoubleValue );
+                    break;
+                case "Boolean":
+                    parameter.BoolValue = EditorGUI.Toggle( rect, parameter.BoolValue );
+                    break;
+                case "Vector2":
+                    parameter.Vector2Value = EditorGUI.Vector2Field( rect, "", parameter.Vector2Value );
+                    break;
+                case "Vector3":
+                    parameter.Vector3Value = EditorGUI.Vector3Field( rect, "", parameter.Vector3Value );
+                    break;
+                case "Vector4":
+                    rect.y -= 16f;
+                    parameter.Vector4Value = EditorGUI.Vector4Field( rect, "", parameter.Vector4Value );
+                    break;
+                case "Quaternion":
+                    rect.y -= 16f;
+                    var v4 = new Vector4( parameter.QuaternionValue.x, parameter.QuaternionValue.y, parameter.QuaternionValue.z, parameter.QuaternionValue.w );
+                    v4 = EditorGUI.Vector4Field( rect, "", v4 );
+                    parameter.QuaternionValue = new Quaternion( v4.x, v4.y, v4.z, v4.w );
+                    break;
+                case "Bounds":
+                    ShowWizard<BoundsWizard>( rect, parameter, "Bounds Editor", 405, 130 );
+                    break;
+                case "Rect":
+                    ShowWizard<RectWizard>( rect, parameter, "Rect Editor", 350, 130 );
+                    break;
+                case "Matrix4x4":
+                    ShowWizard<MatrixWizard>( rect, parameter, "Matrix Editor", 375, 175 );
+                    break;
+                case "AnimationCurve":
+                    parameter.AnimationCurveValue = EditorGUI.CurveField( rect, parameter.AnimationCurveValue );
+                    break;
+                case "Object":
+                    parameter.ObjectValue = EditorGUI.ObjectField( rect, parameter.ObjectValue, parameter.Type, true );
+                    break;
+                case "Enum":
+                    var enumValue = (Enum)Enum.Parse( parameter.Type, parameter.EnumNames[parameter.EnumValue] );
+                    enumValue = EditorGUI.EnumPopup( rect, enumValue );
+                    for ( int i = 0; i < parameter.EnumNames.Length; i++ ) {
+                        if ( parameter.EnumNames[i] == enumValue.ToString() ) {
+                            parameter.EnumValue = i;
+                            break;
+                        }
+                    }
+                    break;
+                default:
+                    EditorGUI.HelpBox( rect, string.Format( "The type {0} is not supported", parameter.RepresentableType ), MessageType.Warning );
+                    break;
+            }
         } else if ( method.Parameters.Count > 1 ) {
             rect.yMax += 3;
             rect.yMin += 3;
@@ -181,8 +243,8 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
             }
         }
     }
-    
-    private void ShowWizard<T>( Rect rect, ExtendedEvent.MemberBase member, string title, float width, float height ) where T : FieldWizard {
+
+    private void ShowWizard<T>( Rect rect, ExtendedEvent.Member member, string title, float width, float height ) where T : FieldWizard {
         if ( GUI.Button( rect, "..." ) ) {
             var wiz = ScriptableWizard.DisplayWizard<T>( title, "Close" );
             wiz.Member = member;
@@ -191,9 +253,17 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         }
     }
 
+    private void ShowWizard<T>( Rect rect, ExtendedEvent.Parameter parameter, string title, float width, float height ) where T : FieldWizard {
+        if ( GUI.Button( rect, "..." ) ) {
+            var wiz = ScriptableWizard.DisplayWizard<T>( title, "Close" );
+            wiz.Parameter = parameter;
+            wiz.minSize = new Vector2( width, height );
+            wiz.maxSize = new Vector2( width, height );
+        }
+    }
+
     #region DropDown 
     private static int dropdownHash = "extDropDown".GetHashCode();
-    private static GUIStyle dropdownPopupStyle = new GUIStyle( EditorStyles.popup );
     private class DropdownCallbackInfo {
         private const string kMaskMenuChangedMessage = "MaskMenuChangedAyo";
         public static DropdownCallbackInfo instance;
