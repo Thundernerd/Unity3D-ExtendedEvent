@@ -141,6 +141,9 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
             case "Rect":
                 ShowWizard<RectWizard>( rect, field, "Rect Editor", 350, 130 );
                 break;
+            case "Matrix4x4":
+                ShowWizard<MatrixWizard>( rect, field, "Matrix Editor", 350, 275 );
+                break;
             case "AnimationCurve":
                 field.AnimationCurveValue = EditorGUI.CurveField( rect, field.AnimationCurveValue );
                 break;
@@ -164,11 +167,153 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
     }
 
     private void DrawProperty( ExtendedEvent.Property property, Rect rect ) {
+        rect.yMax += 3;
+        rect.yMin += 3;
 
+        switch ( property.TypeName ) {
+            case "String":
+                property.StringValue = EditorGUI.TextField( rect, property.StringValue );
+                break;
+            case "Int32":
+                property.IntValue = EditorGUI.IntField( rect, property.IntValue );
+                break;
+            case "Int64":
+                property.LongValue = EditorGUI.LongField( rect, property.LongValue );
+                break;
+            case "Single":
+                property.FloatValue = EditorGUI.FloatField( rect, property.FloatValue );
+                break;
+            case "Double":
+                property.DoubleValue = EditorGUI.DoubleField( rect, property.DoubleValue );
+                break;
+            case "Boolean":
+                property.BoolValue = EditorGUI.Toggle( rect, property.BoolValue );
+                break;
+            case "Vector2":
+                property.Vector2Value = EditorGUI.Vector2Field( rect, "", property.Vector2Value );
+                break;
+            case "Vector3":
+                property.Vector3Value = EditorGUI.Vector3Field( rect, "", property.Vector3Value );
+                break;
+            case "Vector4":
+                rect.y -= 16f;
+                property.Vector4Value = EditorGUI.Vector4Field( rect, "", property.Vector4Value );
+                break;
+            case "Quaternion":
+                rect.y -= 16f;
+                var v4 = new Vector4( property.QuaternionValue.x, property.QuaternionValue.y, property.QuaternionValue.z, property.QuaternionValue.w );
+                v4 = EditorGUI.Vector4Field( rect, "", v4 );
+                property.QuaternionValue = new Quaternion( v4.x, v4.y, v4.z, v4.w );
+                break;
+            case "Bounds":
+                ShowWizard<BoundsWizard>( rect, property, "Bounds Editor", 405, 130 );
+                break;
+            case "Rect":
+                ShowWizard<RectWizard>( rect, property, "Rect Editor", 350, 130 );
+                break;
+            case "Matrix4x4":
+                ShowWizard<MatrixWizard>( rect, property, "Matrix Editor", 350, 275 );
+                break;
+            case "AnimationCurve":
+                property.AnimationCurveValue = EditorGUI.CurveField( rect, property.AnimationCurveValue );
+                break;
+            case "Object":
+                property.ObjectValue = EditorGUI.ObjectField( rect, property.ObjectValue, property.Type, true );
+                break;
+            case "Enum":
+                var enumValue = (Enum)Enum.Parse( property.Type, property.EnumNames[property.EnumValue] );
+                enumValue = EditorGUI.EnumPopup( rect, enumValue );
+                for ( int i = 0; i < property.EnumNames.Length; i++ ) {
+                    if ( property.EnumNames[i] == enumValue.ToString() ) {
+                        property.EnumValue = i;
+                        break;
+                    }
+                }
+                break;
+            default:
+                EditorGUI.HelpBox( rect, string.Format( "The type {0} is not supported", property.RepresentableType ), MessageType.Warning );
+                break;
+        }
     }
 
     private void DrawMethod( ExtendedEvent.Method method, Rect rect ) {
+        if ( method.Parameters.Count == 1 ) {
+            var parameter = method.Parameters[0];
 
+            switch ( parameter.TypeName ) {
+                case "String":
+                    parameter.StringValue = EditorGUI.TextField( rect, parameter.StringValue );
+                    break;
+                case "Int32":
+                    parameter.IntValue = EditorGUI.IntField( rect, parameter.IntValue );
+                    break;
+                case "Int64":
+                    parameter.LongValue = EditorGUI.LongField( rect, parameter.LongValue );
+                    break;
+                case "Single":
+                    parameter.FloatValue = EditorGUI.FloatField( rect, parameter.FloatValue );
+                    break;
+                case "Double":
+                    parameter.DoubleValue = EditorGUI.DoubleField( rect, parameter.DoubleValue );
+                    break;
+                case "Boolean":
+                    parameter.BoolValue = EditorGUI.Toggle( rect, parameter.BoolValue );
+                    break;
+                case "Vector2":
+                    parameter.Vector2Value = EditorGUI.Vector2Field( rect, "", parameter.Vector2Value );
+                    break;
+                case "Vector3":
+                    parameter.Vector3Value = EditorGUI.Vector3Field( rect, "", parameter.Vector3Value );
+                    break;
+                case "Vector4":
+                    rect.y -= 16f;
+                    parameter.Vector4Value = EditorGUI.Vector4Field( rect, "", parameter.Vector4Value );
+                    break;
+                case "Quaternion":
+                    rect.y -= 16f;
+                    var v4 = new Vector4( parameter.QuaternionValue.x, parameter.QuaternionValue.y, parameter.QuaternionValue.z, parameter.QuaternionValue.w );
+                    v4 = EditorGUI.Vector4Field( rect, "", v4 );
+                    parameter.QuaternionValue = new Quaternion( v4.x, v4.y, v4.z, v4.w );
+                    break;
+                case "Bounds":
+                    ShowWizard<BoundsWizard>( rect, parameter, "Bounds Editor", 405, 130 );
+                    break;
+                case "Rect":
+                    ShowWizard<RectWizard>( rect, parameter, "Rect Editor", 350, 130 );
+                    break;
+                case "Matrix4x4":
+                    ShowWizard<MatrixWizard>( rect, parameter, "Matrix Editor", 350, 275 );
+                    break;
+                case "AnimationCurve":
+                    parameter.AnimationCurveValue = EditorGUI.CurveField( rect, parameter.AnimationCurveValue );
+                    break;
+                case "Object":
+                    parameter.ObjectValue = EditorGUI.ObjectField( rect, parameter.ObjectValue, parameter.Type, true );
+                    break;
+                case "Enum":
+                    var enumValue = (Enum)Enum.Parse( parameter.Type, parameter.EnumNames[parameter.EnumValue] );
+                    enumValue = EditorGUI.EnumPopup( rect, enumValue );
+                    for ( int i = 0; i < parameter.EnumNames.Length; i++ ) {
+                        if ( parameter.EnumNames[i] == enumValue.ToString() ) {
+                            parameter.EnumValue = i;
+                            break;
+                        }
+                    }
+                    break;
+                default:
+                    EditorGUI.HelpBox( rect, string.Format( "The type {0} is not supported", parameter.RepresentableType ), MessageType.Warning );
+                    break;
+            }
+        } else if ( method.Parameters.Count > 1 ) {
+            rect.yMax += 3;
+            rect.yMin += 3;
+
+            if ( GUI.Button( rect, "..." ) ) {
+                var mwiz = ScriptableWizard.DisplayWizard<MethodWizard>( "Parameter Editor", "Close" );
+                mwiz.Method = method;
+                mwiz.minSize = new Vector2( 400, 200 );
+            }
+        }
     }
 
     private void ShowWizard<T>( Rect rect, ExtendedEvent.Field field, string title, float width, float height ) where T : FieldWizard {
@@ -180,7 +325,24 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         }
     }
 
+    private void ShowWizard<T>( Rect rect, ExtendedEvent.Property property, string title, float width, float height ) where T : FieldWizard {
+        if ( GUI.Button( rect, "..." ) ) {
+            var wiz = ScriptableWizard.DisplayWizard<T>( title, "Close" );
+            wiz.Property = property;
+            wiz.minSize = new Vector2( width, height );
+            wiz.maxSize = new Vector2( width, height );
+        }
+    }
 
+    private void ShowWizard<T>( Rect rect, ExtendedEvent.Parameter parameter, string title, float width, float height ) where T : FieldWizard {
+        if ( GUI.Button( rect, "..." ) ) {
+            var wiz = ScriptableWizard.DisplayWizard<T>( title, "Close" );
+            wiz.Parameter = parameter;
+            wiz.minSize = new Vector2( width, height );
+            wiz.maxSize = new Vector2( width, height );
+        }
+    }
+    
     #region DropDown 
     private static int dropdownHash = "extDropDown".GetHashCode();
     private static GUIStyle dropdownPopupStyle = new GUIStyle( EditorStyles.popup );

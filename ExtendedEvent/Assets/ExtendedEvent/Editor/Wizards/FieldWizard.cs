@@ -4,6 +4,9 @@ using UnityEditor;
 public class FieldWizard : ScriptableWizard {
 
     public ExtendedEvent.Field Field;
+    public ExtendedEvent.Property Property;
+    public ExtendedEvent.Parameter Parameter;
+
     protected string label = "";
     protected bool ended = false;
     private bool initialized = false;
@@ -11,36 +14,28 @@ public class FieldWizard : ScriptableWizard {
     protected virtual void Initialize() { }
 
     protected override sealed bool DrawWizardGUI() {
-        if ( Field == null ) return false;
+        if ( Field == null && Property == null && Parameter == null ) return false;
 
         if ( string.IsNullOrEmpty( label ) ) {
-            DisplayName( Field.Name );
+            if ( Field != null ) {
+                DisplayName( Field.Name );
+            } else if ( Property != null ) {
+                DisplayName( Property.Name );
+            } else if (Parameter != null ) {
+                DisplayName( Parameter.Name );
+            }
         }
 
         if ( !initialized ) {
             Initialize();
             initialized = true;
         }
-
-        StartGUI();
+        
         WizardGUI();
-        return ended ? false : EndGUI();
-    }
-
-
-    private void StartGUI() {
-        EditorGUI.BeginChangeCheck();
+        return true;
     }
 
     public virtual void WizardGUI() { }
-
-    private bool EndGUI() {
-        if ( EditorGUI.EndChangeCheck() ) {
-            return true;
-        }
-
-        return false;
-    }
 
     public void OnWizardCreate() { }
 

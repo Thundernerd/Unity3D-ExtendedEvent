@@ -19,4 +19,11 @@ public class Tester : MonoBehaviour {
             Event.Invoke();
         }
     }
+
+    public void doit( Transform trans, Rect rect, Bounds b ) {
+        Debug.LogError( trans );
+        Debug.LogError( rect );
+        Debug.LogError( b );
+
+    }
 }
