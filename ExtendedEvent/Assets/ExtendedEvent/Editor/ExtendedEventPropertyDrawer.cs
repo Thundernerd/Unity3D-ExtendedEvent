@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEditorInternal;
@@ -8,52 +7,24 @@ using UnityEngine;
 [CustomPropertyDrawer( typeof( ExtendedEvent ) )]
 public class ExtendedEventPropertyDrawer : PropertyDrawer {
 
-    private SerializedProperty property;
     private ReorderableList rList;
+    private ExtendedEvent eEvent;
+    private string header = "";
+    private ExtendedEvent.GameObjectContainer listener;
 
-    private void InvokeReset( int index ) {
-        var t = property.serializedObject.targetObject.GetType();
-        var f = t.GetField( property.name );
-        var evt = f.GetValue( property.serializedObject.targetObject ) as ExtendedEvent;
-        evt.Listeners[index].Reset();
-    }
+    private void RestoreState( SerializedProperty property ) {
+        if ( rList == null || eEvent == null ) {
+            header = property.name;
 
-    private void HardReset( int index ) {
-        var t = property.serializedObject.targetObject.GetType();
-        var f = t.GetField( property.name );
-        var evt = f.GetValue( property.serializedObject.targetObject ) as ExtendedEvent;
-        evt.Listeners[index].Reset( null );
-    }
+            var target = property.serializedObject.targetObject;
+            var type = target.GetType();
+            var field = type.GetField( property.name );
+            eEvent = field.GetValue( target ) as ExtendedEvent;
+            foreach ( var item in eEvent.Listeners ) {
+                item.Initialize();
+            }
 
-    private List<SerializedProperty> GetObjectsList() {
-        var objects = property.FindPropertyRelative( "Listeners" );
-        var list = new List<SerializedProperty>();
-        for ( int i = 0; i < objects.arraySize; i++ ) {
-            list.Add( objects.GetArrayElementAtIndex( i ) );
-        }
-        return list;
-    }
-
-    private string[] GetList( SerializedProperty property ) {
-        var pList = property.FindPropertyRelative( "List" );
-        var list = new List<string>();
-        for ( int i = 0; i < pList.arraySize; i++ ) {
-            list.Add( pList.GetArrayElementAtIndex( i ).stringValue );
-        }
-        return list.ToArray();
-    }
-
-    public override float GetPropertyHeight( SerializedProperty property, GUIContent label ) {
-        if ( rList == null ) return 80f;
-        return rList.headerHeight + rList.footerHeight + ( rList.elementHeight * Mathf.Max( rList.list.Count, 1 ) ) + 7f;
-    }
-
-    public override void OnGUI( Rect position, SerializedProperty prop, GUIContent label ) {
-        property = prop;
-        property.serializedObject.Update();
-
-        if ( rList == null ) {
-            rList = new ReorderableList( GetObjectsList(), typeof( SerializedProperty ) );
+            rList = new ReorderableList( eEvent.Listeners, typeof( ExtendedEvent.GameObjectContainer ) );
             rList.draggable = false;
             rList.elementHeight *= 2;
             rList.drawHeaderCallback = DrawHeaderInternal;
@@ -61,216 +32,238 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
             rList.onAddCallback = AddInternal;
             rList.onRemoveCallback = RemoveInternal;
         }
+    }
 
-        if ( rList != null ) {
-            rList.DoList( position );
-        }
+    public override float GetPropertyHeight( SerializedProperty property, GUIContent label ) {
+        if ( rList == null ) return 80f;
+        return rList.headerHeight + rList.footerHeight + ( rList.elementHeight * Mathf.Max( rList.list.Count, 1 ) ) + 7f;
+    }
+
+    public override void OnGUI( Rect position, SerializedProperty property, GUIContent label ) {
+        RestoreState( property );
+        rList.DoList( position );
     }
 
     private void DrawHeaderInternal( Rect rect ) {
-        EditorGUI.LabelField( rect, property.displayName );
+        EditorGUI.LabelField( rect, header );
     }
 
     private void AddInternal( ReorderableList list ) {
-        var pList = property.FindPropertyRelative( "Listeners" );
-        pList.InsertArrayElementAtIndex( pList.arraySize );
-        property.serializedObject.ApplyModifiedProperties();
-        list.list = GetObjectsList();
-        HardReset( pList.arraySize - 1 );
+        eEvent.Listeners.Add( new ExtendedEvent.GameObjectContainer() );
     }
 
     private void RemoveInternal( ReorderableList list ) {
-        var pList = property.FindPropertyRelative( "Listeners" );
-        pList.DeleteArrayElementAtIndex( list.index );
-        property.serializedObject.ApplyModifiedProperties();
-        list.list = GetObjectsList();
+        eEvent.Listeners.RemoveAt( list.index );
     }
 
     private void DrawElementInternal( Rect rect, int index, bool isActive, bool isFocused ) {
-        var list = GetObjectsList();
-        SerializedProperty property;
-        try {
-            property = list[index];
-        } catch ( ArgumentOutOfRangeException ) {
-            rList.list.Clear();
-            return;
-        }
+        listener = eEvent.Listeners[index];
 
         rect.yMin += 3f;
         rect.yMax -= 7f;
 
-        var rwidth = rect.width / 3;
-        var rwidthTwo = rwidth * 2;
+        var thirdWidth = rect.width / 3;
+        var halfHeight = rect.height / 2;
+
+        var gameObjectRect = new Rect( rect.x, rect.y, thirdWidth, halfHeight );
+        var dropdownRect = new Rect( rect.x + thirdWidth, rect.y, thirdWidth * 2, halfHeight );
+        var bottomRect = new Rect( rect.x, rect.y + halfHeight, rect.width, halfHeight );
 
         EditorGUI.BeginChangeCheck();
-        GUI.Box( new Rect( rect.x, rect.y, rwidth, rect.height / 2 ), "" );
-        EditorGUI.PropertyField( new Rect( rect.x, rect.y, rwidth, rect.height / 2 ), property.FindPropertyRelative( "GameObject" ), GUIContent.none, false );
+        GUI.Box( gameObjectRect, "" );
+        listener.GameObject = (GameObject)EditorGUI.ObjectField( gameObjectRect, listener.GameObject, typeof( GameObject ), true );
         if ( EditorGUI.EndChangeCheck() ) {
-            property.serializedObject.ApplyModifiedProperties();
-            InvokeReset( index );
+            listener.Reset();
         }
 
-        EditorGUI.BeginChangeCheck();
-        var pIndex = property.FindPropertyRelative( "Index" );
-        pIndex.intValue = DropdownList( new Rect( rect.x + rwidth + 5, rect.y, rwidthTwo - 5, rect.height / 2 ), pIndex.intValue, GetList( property ) );
-        if ( EditorGUI.EndChangeCheck() ) {
-            property.serializedObject.ApplyModifiedProperties();
-        }
+        listener.Index = DropdownList( dropdownRect, listener.Index, listener.List );
+        var i = listener.Index;
 
-        if ( property.FindPropertyRelative( "GameObject" ).objectReferenceValue != null ) {
-            if ( pIndex.intValue != 0 ) {
-                var pList = property.FindPropertyRelative( "List" );
-                var pItem = pList.GetArrayElementAtIndex( pIndex.intValue );
-                var iList = property.FindPropertyRelative( "Indeces" );
-                var iIndex = iList.GetArrayElementAtIndex( pIndex.intValue );
-                var tempRect = new Rect( rect.x, rect.y + rect.height / 2, rect.width, rect.height / 2 );
-
-                var splits = pItem.stringValue.Split( '/' );
-                switch ( splits[1] ) {
-                    case "Fields":
-                        var fields = property.FindPropertyRelative( "Fields" );
-                        var field = fields.GetArrayElementAtIndex( iIndex.intValue );
-                        DrawSerializedProperty( tempRect, field );
-                        break;
-                    case "Properties":
-                        var properties = property.FindPropertyRelative( "Properties" );
-                        var prop = properties.GetArrayElementAtIndex( iIndex.intValue );
-                        DrawSerializedProperty( tempRect, prop );
-                        break;
-                    case "Methods":
-                        var methods = property.FindPropertyRelative( "Methods" );
-                        var method = methods.GetArrayElementAtIndex( iIndex.intValue );
-                        DrawMethod( tempRect, method );
-                        break;
-                }
+        if ( i > 1 && listener.GameObject != null ) {
+            switch ( listener.Type ) {
+                case ExtendedEvent.EMemberType.Field:
+                case ExtendedEvent.EMemberType.Property:
+                    DrawMember( listener.Members[listener.Index], bottomRect );
+                    break;
+                case ExtendedEvent.EMemberType.Method:
+                    DrawMethod( listener.Members[listener.Index], bottomRect );
+                    break;
             }
         }
     }
 
-    private void DrawMethod( Rect rect, SerializedProperty method ) {
-        var parameters = method.FindPropertyRelative( "Parameters" );
+    private void DrawMember( ExtendedEvent.Member member, Rect rect ) {
+        rect.yMax += 3;
+        rect.yMin += 3;
 
-        if ( parameters.arraySize == 1 ) {
-            var parameter = parameters.GetArrayElementAtIndex( 0 );
-            DrawSerializedProperty( rect, parameter );
-        } else if ( parameters.arraySize > 1 ) {
-            EditorGUI.BeginChangeCheck();
+        switch ( member.TypeName ) {
+            case "String":
+                member.StringValue = EditorGUI.TextField( rect, member.StringValue );
+                break;
+            case "Int32":
+                member.IntValue = EditorGUI.IntField( rect, member.IntValue );
+                break;
+            case "Int64":
+                member.LongValue = EditorGUI.LongField( rect, member.LongValue );
+                break;
+            case "Single":
+                member.FloatValue = EditorGUI.FloatField( rect, member.FloatValue );
+                break;
+            case "Double":
+                member.DoubleValue = EditorGUI.DoubleField( rect, member.DoubleValue );
+                break;
+            case "Boolean":
+                member.BoolValue = EditorGUI.Toggle( rect, member.BoolValue );
+                break;
+            case "Vector2":
+                member.Vector2Value = EditorGUI.Vector2Field( rect, "", member.Vector2Value );
+                break;
+            case "Vector3":
+                member.Vector3Value = EditorGUI.Vector3Field( rect, "", member.Vector3Value );
+                break;
+            case "Vector4":
+                rect.y -= 16f;
+                member.Vector4Value = EditorGUI.Vector4Field( rect, "", member.Vector4Value );
+                break;
+            case "Quaternion":
+                rect.y -= 16f;
+                var v4 = new Vector4( member.QuaternionValue.x, member.QuaternionValue.y, member.QuaternionValue.z, member.QuaternionValue.w );
+                v4 = EditorGUI.Vector4Field( rect, "", v4 );
+                member.QuaternionValue = new Quaternion( v4.x, v4.y, v4.z, v4.w );
+                break;
+            case "Bounds":
+                ShowWizard<BoundsWizard>( rect, member, "Bounds Editor", 405, 130 );
+                break;
+            case "Rect":
+                ShowWizard<RectWizard>( rect, member, "Rect Editor", 350, 130 );
+                break;
+            case "Matrix4x4":
+                ShowWizard<MatrixWizard>( rect, member, "Matrix Editor", 375, 175 );
+                break;
+            case "AnimationCurve":
+                member.AnimationCurveValue = EditorGUI.CurveField( rect, member.AnimationCurveValue );
+                break;
+            case "Object":
+                member.ObjectValue = EditorGUI.ObjectField( rect, member.ObjectValue, member.Type, true );
+                break;
+            case "Enum":
+                var enumValue = (Enum)Enum.Parse( member.Type, member.EnumNames[member.EnumValue] );
+                enumValue = EditorGUI.EnumPopup( rect, enumValue );
+                for ( int i = 0; i < member.EnumNames.Length; i++ ) {
+                    if ( member.EnumNames[i] == enumValue.ToString() ) {
+                        member.EnumValue = i;
+                        break;
+                    }
+                }
+                break;
+            default:
+                EditorGUI.HelpBox( rect, string.Format( "The type {0} is not supported", member.RepresentableType ), MessageType.Warning );
+                break;
+        }
+    }
 
-            rect.yMin += 3;
+    private void DrawMethod( ExtendedEvent.Member method, Rect rect ) {
+        if ( method.Parameters.Count == 1 ) {
+            var parameter = method.Parameters[0];
             rect.yMax += 3;
+            rect.yMin += 3;
+
+            switch ( parameter.TypeName ) {
+                case "String":
+                    parameter.StringValue = EditorGUI.TextField( rect, parameter.StringValue );
+                    break;
+                case "Int32":
+                    parameter.IntValue = EditorGUI.IntField( rect, parameter.IntValue );
+                    break;
+                case "Int64":
+                    parameter.LongValue = EditorGUI.LongField( rect, parameter.LongValue );
+                    break;
+                case "Single":
+                    parameter.FloatValue = EditorGUI.FloatField( rect, parameter.FloatValue );
+                    break;
+                case "Double":
+                    parameter.DoubleValue = EditorGUI.DoubleField( rect, parameter.DoubleValue );
+                    break;
+                case "Boolean":
+                    parameter.BoolValue = EditorGUI.Toggle( rect, parameter.BoolValue );
+                    break;
+                case "Vector2":
+                    parameter.Vector2Value = EditorGUI.Vector2Field( rect, "", parameter.Vector2Value );
+                    break;
+                case "Vector3":
+                    parameter.Vector3Value = EditorGUI.Vector3Field( rect, "", parameter.Vector3Value );
+                    break;
+                case "Vector4":
+                    rect.y -= 16f;
+                    parameter.Vector4Value = EditorGUI.Vector4Field( rect, "", parameter.Vector4Value );
+                    break;
+                case "Quaternion":
+                    rect.y -= 16f;
+                    var v4 = new Vector4( parameter.QuaternionValue.x, parameter.QuaternionValue.y, parameter.QuaternionValue.z, parameter.QuaternionValue.w );
+                    v4 = EditorGUI.Vector4Field( rect, "", v4 );
+                    parameter.QuaternionValue = new Quaternion( v4.x, v4.y, v4.z, v4.w );
+                    break;
+                case "Bounds":
+                    ShowWizard<BoundsWizard>( rect, parameter, "Bounds Editor", 405, 130 );
+                    break;
+                case "Rect":
+                    ShowWizard<RectWizard>( rect, parameter, "Rect Editor", 350, 130 );
+                    break;
+                case "Matrix4x4":
+                    ShowWizard<MatrixWizard>( rect, parameter, "Matrix Editor", 375, 175 );
+                    break;
+                case "AnimationCurve":
+                    parameter.AnimationCurveValue = EditorGUI.CurveField( rect, parameter.AnimationCurveValue );
+                    break;
+                case "Object":
+                    parameter.ObjectValue = EditorGUI.ObjectField( rect, parameter.ObjectValue, parameter.Type, true );
+                    break;
+                case "Enum":
+                    var enumValue = (Enum)Enum.Parse( parameter.Type, parameter.EnumNames[parameter.EnumValue] );
+                    enumValue = EditorGUI.EnumPopup( rect, enumValue );
+                    for ( int i = 0; i < parameter.EnumNames.Length; i++ ) {
+                        if ( parameter.EnumNames[i] == enumValue.ToString() ) {
+                            parameter.EnumValue = i;
+                            break;
+                        }
+                    }
+                    break;
+                default:
+                    EditorGUI.HelpBox( rect, string.Format( "The type {0} is not supported", parameter.RepresentableType ), MessageType.Warning );
+                    break;
+            }
+        } else if ( method.Parameters.Count > 1 ) {
+            rect.yMax += 3;
+            rect.yMin += 3;
 
             if ( GUI.Button( rect, "..." ) ) {
-                var wiz = ScriptableWizard.DisplayWizard<MethodWizard>( "Parameter Editor", "Close" );
-                wiz.Property = parameters;
-            }
-
-            if ( EditorGUI.EndChangeCheck() ) {
-                property.serializedObject.ApplyModifiedProperties();
+                var mwiz = ScriptableWizard.DisplayWizard<MethodWizard>( "Parameter Editor", "Close" );
+                mwiz.Method = method;
+                mwiz.minSize = new Vector2( 400, 200 );
             }
         }
     }
 
-    private void DrawProperty( Rect rect, SerializedProperty property, int index ) {
-        var properties = property.FindPropertyRelative( "Properties" );
-        var prop = properties.GetArrayElementAtIndex( index );
-        DrawSerializedProperty( rect, prop );
-    }
-
-    private void DrawField( Rect rect, SerializedProperty property, int index ) {
-        var fields = property.FindPropertyRelative( "Fields" );
-        var field = fields.GetArrayElementAtIndex( index );
-        DrawSerializedProperty( rect, field );
-    }
-
-    private void DrawSerializedProperty( Rect rect, SerializedProperty prop ) {
-        var value = prop.FindPropertyRelative( "NewValue" );
-        var type = prop.FindPropertyRelative( "Type" );
-        var assembly = prop.FindPropertyRelative( "Assembly" );
-        var obj = prop.FindPropertyRelative( "Object" );
-
-        var a = Assembly.Load( assembly.stringValue );
-        var t = a.GetType( type.stringValue );
-
-        rect.yMin += 3f;
-        rect.yMax += 3f;
-
-        EditorGUI.BeginChangeCheck();
-
-        if ( t.IsSubclassOf( typeof( UnityEngine.Object ) ) ) {
-            obj.objectReferenceValue = EditorGUI.ObjectField( rect, obj.objectReferenceValue, t, true );
-        } else {
-            GUIProperty( t, value, rect );
-        }
-
-        if ( EditorGUI.EndChangeCheck() ) {
-            property.serializedObject.ApplyModifiedProperties();
-        }
-    }
-
-    private void ShowWizard<T>( Rect rect, SerializedProperty property, string title, float width, float height ) where T : FieldWizard {
+    private void ShowWizard<T>( Rect rect, ExtendedEvent.Member member, string title, float width, float height ) where T : FieldWizard {
         if ( GUI.Button( rect, "..." ) ) {
             var wiz = ScriptableWizard.DisplayWizard<T>( title, "Close" );
-            wiz.Property = property;
+            wiz.Member = member;
             wiz.minSize = new Vector2( width, height );
             wiz.maxSize = new Vector2( width, height );
         }
     }
 
-    private void GUIProperty( Type t, SerializedProperty value, Rect rect ) {
-        if ( t == typeof( int ) ) {
-            value.stringValue = EditorGUI.IntField( rect, int.Parse( value.stringValue ) ).ToString();
-        } else if ( t == typeof( float ) ) {
-            value.stringValue = EditorGUI.FloatField( rect, float.Parse( value.stringValue ) ).ToString();
-        } else if ( t == typeof( double ) ) {
-            value.stringValue = EditorGUI.DoubleField( rect, double.Parse( value.stringValue ) ).ToString();
-        } else if ( t == typeof( long ) ) {
-            value.stringValue = EditorGUI.LongField( rect, long.Parse( value.stringValue ) ).ToString();
-        } else if ( t == typeof( string ) ) {
-            value.stringValue = EditorGUI.TextField( rect, value.stringValue );
-        } else if ( t == typeof( bool ) ) {
-            value.stringValue = EditorGUI.Toggle( rect, bool.Parse( value.stringValue ) ).ToString();
-        } else if ( t == typeof( Vector2 ) ) {
-            value.stringValue = EditorGUI.Vector2Field( rect, GUIContent.none, ExtendedEventConverter.Vec2( value.stringValue ) ).ToString();
-        } else if ( t == typeof( Vector3 ) ) {
-            value.stringValue = EditorGUI.Vector3Field( rect, GUIContent.none, ExtendedEventConverter.Vec3( value.stringValue ) ).ToString();
-        } else if ( t == typeof( Vector4 ) ) {
-            rect.y -= 16f;
-            value.stringValue = EditorGUI.Vector4Field( rect, "", ExtendedEventConverter.Vec4( value.stringValue ) ).ToString();
-        } else if ( t == typeof( Quaternion ) ) {
-            rect.y -= 16f;
-            value.stringValue = EditorGUI.Vector4Field( rect, "", ExtendedEventConverter.Vec4( value.stringValue ) ).ToString();
-        } else if ( t == typeof( GameObject ) ) {
-            var objectFound = GameObject.Find( value.stringValue );
-            objectFound = (GameObject)EditorGUI.ObjectField( rect, objectFound, typeof( GameObject ), true );
-            if ( objectFound != null ) {
-                value.stringValue = objectFound.name;
-            }
-        } else if ( t == typeof( Bounds ) ) {
-            ShowWizard<BoundsWizard>( rect, value, "Bounds Editor", 405, 115 );
-        } else if ( t == typeof( Rect ) ) {
-            ShowWizard<RectWizard>( rect, value, "Rect Editor", 350, 115 );
-        } else if ( t.BaseType == typeof( Enum ) ) {
-            var eValue = (Enum)Enum.Parse( t, value.stringValue );
-            value.stringValue = EditorGUI.EnumPopup( rect, eValue ).ToString();
-        } else if ( t == typeof( AnimationCurve ) ) {
-            var curve = EditorGUI.CurveField( rect, ExtendedEventConverter.Curve( value.stringValue ) );
-            value.stringValue = "";
-            for ( int i = 0; i < curve.keys.Length; i++ ) {
-                var item = curve.keys[i];
-                value.stringValue += string.Format( "{0}|{1}|{2}|{3}|{4};",
-                    item.inTangent.ToString(), item.outTangent.ToString(),
-                    item.tangentMode.ToString(), item.time.ToString(), item.value.ToString() );
-            }
-        } else if ( t == typeof( Color ) ) {
-            value.stringValue = EditorGUI.ColorField( rect, ExtendedEventConverter.Color( value.stringValue ) ).ToString();
-        } else {
-            EditorGUI.HelpBox( rect, string.Format( "The type \"{0}\" is not supported", t.Name ), MessageType.Warning );
+    private void ShowWizard<T>( Rect rect, ExtendedEvent.Parameter parameter, string title, float width, float height ) where T : FieldWizard {
+        if ( GUI.Button( rect, "..." ) ) {
+            var wiz = ScriptableWizard.DisplayWizard<T>( title, "Close" );
+            wiz.Parameter = parameter;
+            wiz.minSize = new Vector2( width, height );
+            wiz.maxSize = new Vector2( width, height );
         }
     }
 
     #region DropDown 
     private static int dropdownHash = "extDropDown".GetHashCode();
-    private static GUIStyle dropdownPopupStyle = new GUIStyle( EditorStyles.popup );
     private class DropdownCallbackInfo {
         private const string kMaskMenuChangedMessage = "MaskMenuChangedAyo";
         public static DropdownCallbackInfo instance;
@@ -315,23 +308,16 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
             }
         }
     }
-    private static int DropdownList( Rect position, int current, string[] items ) {
-        GUIContent[] contents = new GUIContent[items.Length];
-        for ( int i = 0; i < items.Length; i++ ) {
-            contents[i] = new GUIContent( items[i] );
-        }
-        return InternalDropdownList( position, current, contents, dropdownPopupStyle );
-    }
-    private static int InternalDropdownList( Rect position, int current, GUIContent[] items, GUIStyle style ) {
+    private static int DropdownList( Rect position, int current, GUIContent[] items ) {
         int controlID = GUIUtility.GetControlID( dropdownHash, FocusType.Native, position );
         var mask = DropdownCallbackInfo.GetSelectedValueForControl( controlID, current );
 
         var evt = Event.current;
         if ( evt.type == EventType.Repaint ) {
             if ( current >= items.Length || current == -1 ) {
-                style.Draw( position, new GUIContent( "-" ), controlID, false );
+                EditorStyles.popup.Draw( position, new GUIContent( "-" ), controlID, false );
             } else {
-                style.Draw( position, new GUIContent( items[current] ), controlID, false );
+                EditorStyles.popup.Draw( position, new GUIContent( items[current] ), controlID, false );
             }
         } else if ( evt.type == EventType.MouseDown && position.Contains( evt.mousePosition ) ) {
             DropdownCallbackInfo.instance = new DropdownCallbackInfo( controlID );
