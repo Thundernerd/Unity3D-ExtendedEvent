@@ -42,6 +42,38 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
     public override void OnGUI( Rect position, SerializedProperty property, GUIContent label ) {
         RestoreState( property );
         rList.DoList( position );
+
+        if ( Event.current.type == EventType.DragUpdated ) {
+            HandleDrag( position );
+        } else if ( Event.current.type == EventType.DragPerform ) {
+            HandlePerformDrag();
+        }
+    }
+
+    private void HandleDrag( Rect rect ) {
+        if ( rect.Contains( Event.current.mousePosition ) ) {
+            if ( DragAndDrop.paths.Length == 0 ) {
+                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                DragAndDrop.AcceptDrag();
+            } else {
+                DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+            }
+        }
+    }
+
+    private void HandlePerformDrag() {
+        var objects = DragAndDrop.objectReferences;
+        var componentType = typeof( Component );
+        var gameObjectType = typeof( GameObject );
+        foreach ( var item in objects ) {
+            if ( item.GetType() == gameObjectType ) {
+                var gobj = item as GameObject;
+                eEvent.Listeners.Add( new ExtendedEvent.GameObjectContainer( gobj ) );
+            } else if ( item.GetType().IsSubclassOf( componentType ) ) {
+                var cmp = item as Component;
+                eEvent.Listeners.Add( new ExtendedEvent.GameObjectContainer( cmp.gameObject ) );
+            }
+        }
     }
 
     private void DrawHeaderInternal( Rect rect ) {
