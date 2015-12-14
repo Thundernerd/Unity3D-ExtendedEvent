@@ -154,6 +154,7 @@ public class ExtendedEvent {
                 case "AnimationCurve":
                     return AnimationCurveValue;
                 case "Object":
+                case "GameObject":
                     return ObjectValue;
                 case "Enum":
                     return Enum.Parse( Type, EnumNames[EnumValue] );
@@ -304,6 +305,7 @@ public class ExtendedEvent {
                 case "AnimationCurve":
                     return AnimationCurveValue;
                 case "Object":
+                case "GameObject":
                     return ObjectValue;
                 case "Enum":
                     return Enum.Parse( Type, EnumNames[EnumValue] );
@@ -425,6 +427,7 @@ public class ExtendedEvent {
                         AnimationCurveValue = other.AnimationCurveValue;
                         break;
                     case "Object":
+                    case "GameObject":
                         ObjectValue = other.ObjectValue;
                         break;
                     case "Enum":
@@ -510,7 +513,7 @@ public class ExtendedEvent {
 
             if ( GameObject == null ) return;
             var tempList = new List<GUIContent>();
-            
+
             // "Force add" GameObject item
             ReadObject( typeof( GameObject ), ref tempList );
 
@@ -626,6 +629,110 @@ public class ExtendedEvent {
     public void Invoke() {
         foreach ( var item in Listeners ) {
             item.Invoke();
+        }
+    }
+
+    public void Find( GameObject gameObject, string memberName, params object[] parameters ) {
+        var container = new GameObjectContainer( gameObject );
+
+        for ( int i = 0; i < container.Members.Count; i++ ) {
+            var member = container.Members[i];
+
+            if ( member == null ) continue;
+            if ( member.Name != memberName ) continue;
+            if ( member.Parameters.Count != parameters.Length ) continue;
+
+            var foundMember = true;
+
+            foreach ( var mParam in member.Parameters ) {
+                var foundParameter = false;
+                foreach ( var pParam in parameters ) {
+                    var t = pParam.GetType();
+                    if ( mParam.Type == t || t.IsSubclassOf( mParam.Type ) ) {
+                        foundParameter = true;
+                        break;
+                    }
+                }
+
+                if ( !foundParameter ) {
+                    foundMember = false;
+                    break;
+                }
+            }
+
+            if ( !foundMember ) continue;
+
+            container.Index = i;
+
+            foreach ( var mParam in member.Parameters ) {
+                foreach ( var pParam in parameters ) {
+                    if ( mParam.Type != pParam.GetType() ) continue;
+
+                    switch ( mParam.TypeName ) {
+                        case "String":
+                            mParam.StringValue = (string)pParam;
+                            break;
+                        case "Int32":
+                            mParam.IntValue = (int)pParam;
+                            break;
+                        case "Int64":
+                            mParam.LongValue = (long)pParam;
+                            break;
+                        case "Single":
+                            mParam.FloatValue = (float)pParam;
+                            break;
+                        case "Double":
+                            mParam.DoubleValue = (double)pParam;
+                            break;
+                        case "Boolean":
+                            mParam.BoolValue = (bool)pParam;
+                            break;
+                        case "Vector2":
+                            mParam.Vector2Value = (Vector2)pParam;
+                            break;
+                        case "Vector3":
+                            mParam.Vector3Value = (Vector3)pParam;
+                            break;
+                        case "Vector4":
+                            mParam.Vector4Value = (Vector4)pParam;
+                            break;
+                        case "Quaternion":
+                            mParam.QuaternionValue = (Quaternion)pParam;
+                            break;
+                        case "Bounds":
+                            mParam.BoundsValue = (Bounds)pParam;
+                            break;
+                        case "Rect":
+                            mParam.RectValue = (Rect)pParam;
+                            break;
+                        case "Matrix4x4":
+                            mParam.MatrixValue = (Matrix4x4)pParam;
+                            break;
+                        case "AnimationCurve":
+                            mParam.AnimationCurveValue = (AnimationCurve)pParam;
+                            break;
+                        case "Object":
+                        case "GameObject":
+                            mParam.ObjectValue = (UnityEngine.Object)pParam;
+                            break;
+                        case "Enum":
+                            for ( int j = 0; j < mParam.EnumNames.Length; j++ ) {
+                                if ( mParam.EnumNames[j] == pParam.ToString() ) {
+                                    mParam.EnumValue = j;
+                                    break;
+                                }
+                            }
+                            break;
+                        default:
+                            Debug.LogErrorFormat( "The type {0} is not supported", mParam.Type.Name );
+                            break;
+                    }
+                }
+            }
+
+            Listeners.Add( container );
+
+            break;
         }
     }
 }

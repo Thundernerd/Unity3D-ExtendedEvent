@@ -176,6 +176,7 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
                 member.AnimationCurveValue = EditorGUI.CurveField( rect, member.AnimationCurveValue );
                 break;
             case "Object":
+            case "GameObject":
                 member.ObjectValue = EditorGUI.ObjectField( rect, member.ObjectValue, member.Type, true );
                 break;
             case "Enum":
@@ -248,6 +249,7 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
                     parameter.AnimationCurveValue = EditorGUI.CurveField( rect, parameter.AnimationCurveValue );
                     break;
                 case "Object":
+                case "GameObject":
                     parameter.ObjectValue = EditorGUI.ObjectField( rect, parameter.ObjectValue, parameter.Type, true );
                     break;
                 case "Enum":

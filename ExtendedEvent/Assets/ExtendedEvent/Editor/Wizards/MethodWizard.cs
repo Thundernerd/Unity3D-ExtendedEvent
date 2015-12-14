@@ -82,6 +82,7 @@ public class MethodWizard : ScriptableWizard {
                     parameter.AnimationCurveValue = EditorGUILayout.CurveField( parameter.AnimationCurveValue );
                     break;
                 case "Object":
+                case "GameObject":
                     parameter.ObjectValue = EditorGUILayout.ObjectField( parameter.DisplayName, parameter.ObjectValue, parameter.Type, true );
                     break;
                 case "Enum":
