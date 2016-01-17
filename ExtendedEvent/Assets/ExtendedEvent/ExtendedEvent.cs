@@ -11,6 +11,8 @@ public class ExtendedEvent {
     private static string GetTypeName( Type type ) {
         if ( type.Assembly.FullName.Contains( "Unity" ) ) {
             return type.Name;
+        } else if ( type.IsEnum ) {
+            return type.Name;
         } else {
             var code = Type.GetTypeCode( type );
             switch ( code ) {
@@ -97,10 +99,14 @@ public class ExtendedEvent {
         protected string assemblyName;
         [SerializeField]
         protected string parentName;
+        [SerializeField]
+        protected ParameterInfo info;
 
         public Parameter() { }
 
         public Parameter( ParameterInfo info ) {
+            this.info = info;
+
             Name = info.Name;
             Type = info.ParameterType;
             TypeName = info.ParameterType.Name;
@@ -116,6 +122,7 @@ public class ExtendedEvent {
                 EnumNames = Enum.GetNames( Type );
             }
 
+            LoadDefaultValue();
             SetDisplayName();
         }
 
@@ -165,6 +172,62 @@ public class ExtendedEvent {
 
         public void LoadType() {
             Type = Type.GetType( string.Format( "{0},{1}", typeName, assemblyName ) );
+        }
+
+        public void LoadDefaultValue() {
+            if ( info == null ) return;
+
+            switch ( TypeName ) {
+                case "String":
+                    StringValue = info.IsOptional ? (string)info.DefaultValue : "";
+                    break;
+                case "Int32":
+                    IntValue = info.IsOptional ? (int)info.DefaultValue : 0;
+                    break;
+                case "Int64":
+                    LongValue = info.IsOptional ? (long)info.DefaultValue : 0;
+                    break;
+                case "Single":
+                    FloatValue = info.IsOptional ? (float)info.DefaultValue : 0;
+                    break;
+                case "Double":
+                    DoubleValue = info.IsOptional ? (double)info.DefaultValue : 0;
+                    break;
+                case "Boolean":
+                    BoolValue = info.IsOptional ? (bool)info.DefaultValue : false;
+                    break;
+                case "Vector2":
+                    Vector2Value = info.IsOptional ? (Vector2)info.DefaultValue : Vector2.zero;
+                    break;
+                case "Vector3":
+                    Vector3Value = info.IsOptional ? (Vector3)info.DefaultValue : Vector3.zero;
+                    break;
+                case "Vector4":
+                    Vector4Value = info.IsOptional ? (Vector4)info.DefaultValue : Vector4.zero;
+                    break;
+                case "Quaternion":
+                    QuaternionValue = info.IsOptional ? (Quaternion)info.DefaultValue : new Quaternion();
+                    break;
+                case "Bounds":
+                    BoundsValue = info.IsOptional ? (Bounds)info.DefaultValue : new Bounds();
+                    break;
+                case "Rect":
+                    RectValue = info.IsOptional ? (Rect)info.DefaultValue : new Rect();
+                    break;
+                case "Matrix4x4":
+                    MatrixValue = info.IsOptional ? (Matrix4x4)info.DefaultValue : new Matrix4x4();
+                    break;
+                case "AnimationCurve":
+                    AnimationCurveValue = info.IsOptional ? (AnimationCurve)info.DefaultValue : new AnimationCurve();
+                    break;
+                case "Object":
+                case "GameObject":
+                    ObjectValue = info.IsOptional ? (UnityEngine.Object)info.DefaultValue : null;
+                    break;
+                case "Enum":
+                    EnumValue = info.IsOptional ? (int)info.DefaultValue : 0;
+                    break;
+            }
         }
 
         public void SetDisplayName() {
@@ -444,8 +507,7 @@ public class ExtendedEvent {
                     return string.Format( "{0}/Fields/{1} {2}", parentName, RepresentableType, Name );
                 case EMemberType.Property:
                     return string.Format( "{0}/Properties/{1} {2}", parentName, RepresentableType, Name );
-                case EMemberType.Method:
-                    {
+                case EMemberType.Method: {
                         var parameters = "";
                         foreach ( var item in Parameters ) {
                             parameters += string.Format( "{0}, ", item.ToString() );
