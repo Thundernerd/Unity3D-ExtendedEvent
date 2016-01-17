@@ -12,14 +12,15 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
     private string header = "";
     private ExtendedEvent.GameObjectContainer listener;
 
+    private SerializedProperty serializedProperty;
+    private bool isDirty = false;
+
     private void RestoreState( SerializedProperty property ) {
         if ( rList == null || eEvent == null ) {
-            header = property.name;
 
+            header = property.name;
             var target = property.serializedObject.targetObject;
-            var type = target.GetType();
-            var field = type.GetField( property.name );
-            eEvent = field.GetValue( target ) as ExtendedEvent;
+            eEvent = fieldInfo.GetValue( target ) as ExtendedEvent;
             foreach ( var item in eEvent.Listeners ) {
                 item.Initialize();
             }
@@ -40,6 +41,11 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
     }
 
     public override void OnGUI( Rect position, SerializedProperty property, GUIContent label ) {
+        serializedProperty = property;
+
+        EditorGUI.BeginProperty( position, label, property );
+        EditorGUI.BeginChangeCheck();
+
         RestoreState( property );
         rList.DoList( position );
 
@@ -48,6 +54,11 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
         } else if ( Event.current.type == EventType.DragPerform ) {
             HandlePerformDrag();
         }
+
+        if ( EditorGUI.EndChangeCheck() ) {
+            isDirty = true;
+        }
+        EditorGUI.EndProperty();
     }
 
     private void HandleDrag( Rect rect ) {
@@ -69,15 +80,26 @@ public class ExtendedEventPropertyDrawer : PropertyDrawer {
             if ( item.GetType() == gameObjectType ) {
                 var gobj = item as GameObject;
                 eEvent.Listeners.Add( new ExtendedEvent.GameObjectContainer( gobj ) );
+                isDirty = true;
             } else if ( item.GetType().IsSubclassOf( componentType ) ) {
                 var cmp = item as Component;
                 eEvent.Listeners.Add( new ExtendedEvent.GameObjectContainer( cmp.gameObject ) );
+                isDirty = true;
             }
         }
     }
 
     private void DrawHeaderInternal( Rect rect ) {
         EditorGUI.LabelField( rect, header );
+
+        if ( serializedProperty.isInstantiatedPrefab ) {
+            EditorGUI.BeginDisabledGroup( !isDirty );
+            if ( GUI.Button( new Rect( rect.x + rect.width * 0.85f, rect.y, rect.width * 0.15f, rect.height ), "Apply" ) ) {
+                isDirty = false;
+                EditorUtility.SetDirty( serializedProperty.serializedObject.targetObject );
+            }
+            EditorGUI.EndDisabledGroup();
+        }
     }
 
     private void AddInternal( ReorderableList list ) {
