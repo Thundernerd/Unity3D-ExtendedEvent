@@ -314,6 +314,65 @@ public class ExtendedEvent {
             parentName = type.Name;
         }
 
+        public Member( MemberInfo info, Type infoType, Type type, UnityEngine.Object container )
+            : this( info, infoType, type, EMemberType.Field ) {
+
+            var finfo = info as FieldInfo;
+
+            switch ( TypeName ) {
+                case "String":
+                    StringValue = (string)finfo.GetValue( container );
+                    break;
+                case "Int32":
+                    IntValue = (int)finfo.GetValue( container );
+                    break;
+                case "Int64":
+                    LongValue = (long)finfo.GetValue( container );
+                    break;
+                case "Single":
+                    FloatValue = (float)finfo.GetValue( container );
+                    break;
+                case "Double":
+                    DoubleValue = (double)finfo.GetValue( container );
+                    break;
+                case "Boolean":
+                    BoolValue = (bool)finfo.GetValue( container );
+                    break;
+                case "Vector2":
+                    Vector2Value = (Vector2)finfo.GetValue( container );
+                    break;
+                case "Vector3":
+                    Vector3Value = (Vector3)finfo.GetValue( container );
+                    break;
+                case "Vector4":
+                    Vector4Value = (Vector4)finfo.GetValue( container );
+                    break;
+                case "Quaternion":
+                    QuaternionValue = (Quaternion)finfo.GetValue( container );
+                    break;
+                case "Bounds":
+                    BoundsValue = (Bounds)finfo.GetValue( container );
+                    break;
+                case "Rect":
+                    RectValue = (Rect)finfo.GetValue( container );
+                    break;
+                case "Matrix4x4":
+                    MatrixValue = (Matrix4x4)finfo.GetValue( container );
+                    break;
+                case "AnimationCurve":
+                    AnimationCurveValue = (AnimationCurve)finfo.GetValue( container );
+                    break;
+                case "Object":
+                case "GameObject":
+                    ObjectValue = (UnityEngine.Object)finfo.GetValue( container );
+                    break;
+                case "Enum":
+                    EnumValue = (int)finfo.GetValue( container );
+                    break;
+            }
+
+        }
+
         public Member( MethodInfo info, Type infoType, Type type, ParameterInfo[] parameters )
             : this( info, infoType, type, EMemberType.Method ) {
             Parameters = new List<Parameter>();
@@ -644,8 +703,9 @@ public class ExtendedEvent {
             properties.Sort( ( p1, p2 ) => p1.Name.CompareTo( p2.Name ) );
             methods.Sort( ( m1, m2 ) => m1.Name.CompareTo( m2.Name ) );
 
+            UnityEngine.Object obj = type == typeof( GameObject ) ? (UnityEngine.Object)GameObject : GameObject.GetComponent( type );
             foreach ( var f in fields ) {
-                var field = new Member( f, f.FieldType, type, EMemberType.Field );
+                var field = new Member( f, f.FieldType, type, obj );
                 tempList.Add( new GUIContent( field.ToString() ) );
                 Members.Add( field );
             }
