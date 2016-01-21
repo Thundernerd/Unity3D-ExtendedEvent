@@ -177,56 +177,60 @@ public class ExtendedEvent {
         public void LoadDefaultValue() {
             if ( info == null ) return;
 
-            switch ( TypeName ) {
-                case "String":
-                    StringValue = info.IsOptional ? (string)info.DefaultValue : "";
-                    break;
-                case "Int32":
-                    IntValue = info.IsOptional ? (int)info.DefaultValue : 0;
-                    break;
-                case "Int64":
-                    LongValue = info.IsOptional ? (long)info.DefaultValue : 0;
-                    break;
-                case "Single":
-                    FloatValue = info.IsOptional ? (float)info.DefaultValue : 0;
-                    break;
-                case "Double":
-                    DoubleValue = info.IsOptional ? (double)info.DefaultValue : 0;
-                    break;
-                case "Boolean":
-                    BoolValue = info.IsOptional ? (bool)info.DefaultValue : false;
-                    break;
-                case "Vector2":
-                    Vector2Value = info.IsOptional ? (Vector2)info.DefaultValue : Vector2.zero;
-                    break;
-                case "Vector3":
-                    Vector3Value = info.IsOptional ? (Vector3)info.DefaultValue : Vector3.zero;
-                    break;
-                case "Vector4":
-                    Vector4Value = info.IsOptional ? (Vector4)info.DefaultValue : Vector4.zero;
-                    break;
-                case "Quaternion":
-                    QuaternionValue = info.IsOptional ? (Quaternion)info.DefaultValue : new Quaternion();
-                    break;
-                case "Bounds":
-                    BoundsValue = info.IsOptional ? (Bounds)info.DefaultValue : new Bounds();
-                    break;
-                case "Rect":
-                    RectValue = info.IsOptional ? (Rect)info.DefaultValue : new Rect();
-                    break;
-                case "Matrix4x4":
-                    MatrixValue = info.IsOptional ? (Matrix4x4)info.DefaultValue : new Matrix4x4();
-                    break;
-                case "AnimationCurve":
-                    AnimationCurveValue = info.IsOptional ? (AnimationCurve)info.DefaultValue : new AnimationCurve();
-                    break;
-                case "Object":
-                case "GameObject":
-                    ObjectValue = info.IsOptional ? (UnityEngine.Object)info.DefaultValue : null;
-                    break;
-                case "Enum":
-                    EnumValue = info.IsOptional ? (int)info.DefaultValue : 0;
-                    break;
+            try {
+                switch ( TypeName ) {
+                    case "String":
+                        StringValue = info.IsOptional ? (string)info.DefaultValue : "";
+                        break;
+                    case "Int32":
+                        IntValue = info.IsOptional ? (int)info.DefaultValue : 0;
+                        break;
+                    case "Int64":
+                        LongValue = info.IsOptional ? (long)info.DefaultValue : 0;
+                        break;
+                    case "Single":
+                        FloatValue = info.IsOptional ? (float)info.DefaultValue : 0;
+                        break;
+                    case "Double":
+                        DoubleValue = info.IsOptional ? (double)info.DefaultValue : 0;
+                        break;
+                    case "Boolean":
+                        BoolValue = info.IsOptional ? (bool)info.DefaultValue : false;
+                        break;
+                    case "Vector2":
+                        Vector2Value = info.IsOptional ? (Vector2)info.DefaultValue : Vector2.zero;
+                        break;
+                    case "Vector3":
+                        Vector3Value = info.IsOptional ? (Vector3)info.DefaultValue : Vector3.zero;
+                        break;
+                    case "Vector4":
+                        Vector4Value = info.IsOptional ? (Vector4)info.DefaultValue : Vector4.zero;
+                        break;
+                    case "Quaternion":
+                        QuaternionValue = info.IsOptional ? (Quaternion)info.DefaultValue : new Quaternion();
+                        break;
+                    case "Bounds":
+                        BoundsValue = info.IsOptional ? (Bounds)info.DefaultValue : new Bounds();
+                        break;
+                    case "Rect":
+                        RectValue = info.IsOptional ? (Rect)info.DefaultValue : new Rect();
+                        break;
+                    case "Matrix4x4":
+                        MatrixValue = info.IsOptional ? (Matrix4x4)info.DefaultValue : new Matrix4x4();
+                        break;
+                    case "AnimationCurve":
+                        AnimationCurveValue = info.IsOptional ? (AnimationCurve)info.DefaultValue : new AnimationCurve();
+                        break;
+                    case "Object":
+                    case "GameObject":
+                        ObjectValue = info.IsOptional ? (UnityEngine.Object)info.DefaultValue : null;
+                        break;
+                    case "Enum":
+                        EnumValue = info.IsOptional ? (int)info.DefaultValue : 0;
+                        break;
+                }
+            } catch ( InvalidCastException ) {
+                // Ignoring the default value for this parameter since it cannot be converted properly
             }
         }
 
@@ -319,58 +323,61 @@ public class ExtendedEvent {
 
             var finfo = info as FieldInfo;
 
-            switch ( TypeName ) {
-                case "String":
-                    StringValue = (string)finfo.GetValue( container );
-                    break;
-                case "Int32":
-                    IntValue = (int)finfo.GetValue( container );
-                    break;
-                case "Int64":
-                    LongValue = (long)finfo.GetValue( container );
-                    break;
-                case "Single":
-                    FloatValue = (float)finfo.GetValue( container );
-                    break;
-                case "Double":
-                    DoubleValue = (double)finfo.GetValue( container );
-                    break;
-                case "Boolean":
-                    BoolValue = (bool)finfo.GetValue( container );
-                    break;
-                case "Vector2":
-                    Vector2Value = (Vector2)finfo.GetValue( container );
-                    break;
-                case "Vector3":
-                    Vector3Value = (Vector3)finfo.GetValue( container );
-                    break;
-                case "Vector4":
-                    Vector4Value = (Vector4)finfo.GetValue( container );
-                    break;
-                case "Quaternion":
-                    QuaternionValue = (Quaternion)finfo.GetValue( container );
-                    break;
-                case "Bounds":
-                    BoundsValue = (Bounds)finfo.GetValue( container );
-                    break;
-                case "Rect":
-                    RectValue = (Rect)finfo.GetValue( container );
-                    break;
-                case "Matrix4x4":
-                    MatrixValue = (Matrix4x4)finfo.GetValue( container );
-                    break;
-                case "AnimationCurve":
-                    AnimationCurveValue = (AnimationCurve)finfo.GetValue( container );
-                    break;
-                case "Object":
-                case "GameObject":
-                    ObjectValue = (UnityEngine.Object)finfo.GetValue( container );
-                    break;
-                case "Enum":
-                    EnumValue = (int)finfo.GetValue( container );
-                    break;
+            try {
+                switch ( TypeName ) {
+                    case "String":
+                        StringValue = (string)finfo.GetValue( container );
+                        break;
+                    case "Int32":
+                        IntValue = (int)finfo.GetValue( container );
+                        break;
+                    case "Int64":
+                        LongValue = (long)finfo.GetValue( container );
+                        break;
+                    case "Single":
+                        FloatValue = (float)finfo.GetValue( container );
+                        break;
+                    case "Double":
+                        DoubleValue = (double)finfo.GetValue( container );
+                        break;
+                    case "Boolean":
+                        BoolValue = (bool)finfo.GetValue( container );
+                        break;
+                    case "Vector2":
+                        Vector2Value = (Vector2)finfo.GetValue( container );
+                        break;
+                    case "Vector3":
+                        Vector3Value = (Vector3)finfo.GetValue( container );
+                        break;
+                    case "Vector4":
+                        Vector4Value = (Vector4)finfo.GetValue( container );
+                        break;
+                    case "Quaternion":
+                        QuaternionValue = (Quaternion)finfo.GetValue( container );
+                        break;
+                    case "Bounds":
+                        BoundsValue = (Bounds)finfo.GetValue( container );
+                        break;
+                    case "Rect":
+                        RectValue = (Rect)finfo.GetValue( container );
+                        break;
+                    case "Matrix4x4":
+                        MatrixValue = (Matrix4x4)finfo.GetValue( container );
+                        break;
+                    case "AnimationCurve":
+                        AnimationCurveValue = (AnimationCurve)finfo.GetValue( container );
+                        break;
+                    case "Object":
+                    case "GameObject":
+                        ObjectValue = (UnityEngine.Object)finfo.GetValue( container );
+                        break;
+                    case "Enum":
+                        EnumValue = (int)finfo.GetValue( container );
+                        break;
+                }
+            } catch ( InvalidCastException ) {
+                // Ignoring the default value for this field since it cannot be converted properly
             }
-
         }
 
         public Member( MethodInfo info, Type infoType, Type type, ParameterInfo[] parameters )
