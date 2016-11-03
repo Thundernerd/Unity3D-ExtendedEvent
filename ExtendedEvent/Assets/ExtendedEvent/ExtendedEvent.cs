@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
-public class ExtendedEvent : ISerializationCallbackReceiver {
+public sealed class ExtendedEvent {
 
     private List<Action> callbacks = new List<Action>();
 
@@ -21,13 +21,5 @@ public class ExtendedEvent : ISerializationCallbackReceiver {
 
     public void Invoke() {
 
-    }
-
-    public void OnBeforeSerialize() {
-        
-    }
-
-    public void OnAfterDeserialize() {
-        
     }
 }
