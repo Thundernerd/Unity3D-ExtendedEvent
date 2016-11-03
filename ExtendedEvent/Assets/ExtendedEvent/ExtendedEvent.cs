@@ -22,6 +22,9 @@ public sealed class ExtendedEvent {
 
     private List<Action> callbacks = new List<Action>();
 
+    [SerializeField]
+    private List<Container> calls;
+
     public void AddListener( Action callback ) {
         callbacks.Add( callback );
     }
