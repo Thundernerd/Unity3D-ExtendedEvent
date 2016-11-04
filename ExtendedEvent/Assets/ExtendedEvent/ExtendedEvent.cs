@@ -10,6 +10,27 @@ public sealed class ExtendedEvent {
         public UnityEngine.Object Target;
         public int Index;
         public MemberInfo Info = new MemberInfo();
+        public List<Value> Values = new List<Value>();
+    }
+
+    [Serializable]
+    public class Value {
+        public AnimationCurve animationCurveValue;
+        public bool boolValue;
+        public Bounds boundsValue;
+        public Color colorValue;
+        public double doubleValue;
+        public Enum enumValue;
+        public float floatValue;
+        public int intValue;
+        public long longValue;
+        public UnityEngine.Object objectReferenceValue;
+        public Quaternion quaternionValue;
+        public Rect rectValue;
+        public string stringValue;
+        public Vector2 vector2Value;
+        public Vector3 vector3Value;
+        public Vector4 vector4Value;
     }
 
     [Serializable]
@@ -23,7 +44,7 @@ public sealed class ExtendedEvent {
     private List<Action> callbacks = new List<Action>();
 
     [SerializeField]
-    private List<Container> calls;
+    private List<Container> persistentCallbacks;
 
     public void AddListener( Action callback ) {
         callbacks.Add( callback );
