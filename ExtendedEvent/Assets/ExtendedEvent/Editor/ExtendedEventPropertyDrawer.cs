@@ -128,6 +128,7 @@ namespace TNRD.ExtendedEvent {
         private int lastSelectedIndex;
 
         private PropertyWizardValue propertyWizardValue;
+        private ParameterWizardValue parameterWizardValue;
 
         private State GetState( SerializedProperty property ) {
             State state = null;
@@ -170,8 +171,17 @@ namespace TNRD.ExtendedEvent {
 
         public override void OnGUI( Rect position, SerializedProperty property, GUIContent label ) {
             if ( propertyWizardValue != null ) {
-                SetPropertyValue( property, propertyWizardValue );
+                Utilities.SetPropertyValue( property, propertyWizardValue );
                 propertyWizardValue = null;
+            } else if ( parameterWizardValue != null ) {
+                var p = property.serializedObject.FindProperty( parameterWizardValue.Path );
+                for ( int i = 0; i < parameterWizardValue.Objects.Count; i++ ) {
+                    var element = p.GetArrayElementAtIndex( i );
+                    var value = parameterWizardValue.Objects[i].FindProperty( "Value" );
+                    var type = parameterWizardValue.Parameters[i].ParameterType;
+                    Utilities.CopyValue( Utilities.GetPropertyFromType( type, value ), element, type );
+                }
+                parameterWizardValue = null;
             }
 
             prop = property;
@@ -197,20 +207,6 @@ namespace TNRD.ExtendedEvent {
         protected virtual void DrawEventHeader( Rect headerRect ) {
             headerRect.height = 16f;
             GUI.Label( headerRect, text );
-        }
-
-        private Rect[] GetRowRects( Rect rect ) {
-            rect.height = 16f;
-            rect.y += 2;
-            var rect1 = rect;
-            rect1.width *= 0.3f;
-            var rect2 = rect1;
-            rect2.y += EditorGUIUtility.singleLineHeight + 2f;
-            var rect3 = rect;
-            rect3.xMin = rect2.xMax + 5f;
-            var rect4 = rect3;
-            rect4.y += EditorGUIUtility.singleLineHeight + 2f;
-            return new Rect[] { rect1, rect2, rect3, rect4 };
         }
 
         private Members InsertOrUpdateMembers( SerializedProperty property, int index ) {
@@ -292,7 +288,11 @@ namespace TNRD.ExtendedEvent {
                         }
 
                         if ( GUI.Button( valueRect, "..." ) ) {
-
+                            var wizard = ScriptableWizard.DisplayWizard<ParameterWizard>( "Parameters", "Close" );
+                            wizard.Parameters = parameters;
+                            wizard.Property = valuesProperty.Copy();
+                            wizard.Path = valuesProperty.propertyPath;
+                            wizard.Callback = OnParameterWizardClose;
                         }
                     } else if ( parameters.Length == 1 ) {
                         if ( valuesProperty.arraySize == 0 ) {
@@ -336,67 +336,17 @@ namespace TNRD.ExtendedEvent {
             }
         }
 
-        private static bool IsUnityObject( System.Type type ) {
-            if ( type == null )
-                return false;
-
-            if ( type == typeof( Object ) )
-                return true;
-
-            return IsUnityObject( type.BaseType );
-        }
-
-        public static SerializedProperty GetPropertyFromType( System.Type type, SerializedProperty property ) {
-            if ( IsUnityObject( type ) ) {
-                return property.FindPropertyRelative( "objectReferenceValue" );
-            } else {
-                if ( type == typeof( AnimationCurve ) ) {
-                    return property.FindPropertyRelative( "animationCurveValue" );
-                } else if ( type == typeof( bool ) ) {
-                    return property.FindPropertyRelative( "boolValue" );
-                } else if ( type == typeof( Bounds ) ) {
-                    return property.FindPropertyRelative( "boundsValue" );
-                } else if ( type == typeof( Color ) ) {
-                    return property.FindPropertyRelative( "colorValue" );
-                } else if ( type == typeof( double ) ) {
-                    return property.FindPropertyRelative( "doubleValue" );
-                } else if ( type.IsEnum ) {
-                    return property.FindPropertyRelative( "enumValue" );
-                } else if ( type == typeof( float ) ) {
-                    return property.FindPropertyRelative( "floatValue" );
-                } else if ( type == typeof( int ) ) {
-                    return property.FindPropertyRelative( "intValue" );
-                } else if ( type == typeof( long ) ) {
-                    return property.FindPropertyRelative( "longValue" );
-                } else if ( type == typeof( Quaternion ) ) {
-                    return property.FindPropertyRelative( "quaternionValue" );
-                } else if ( type == typeof( Rect ) ) {
-                    return property.FindPropertyRelative( "rectValue" );
-                } else if ( type == typeof( string ) ) {
-                    return property.FindPropertyRelative( "stringValue" );
-                } else if ( type == typeof( Vector2 ) ) {
-                    return property.FindPropertyRelative( "vector2Value" );
-                } else if ( type == typeof( Vector3 ) ) {
-                    return property.FindPropertyRelative( "vector3Value" );
-                } else if ( type == typeof( Vector4 ) ) {
-                    return property.FindPropertyRelative( "vector4Value" );
-                }
-            }
-
-            return null;
-        }
-
         private void DrawMember( Rect rect, System.Type type, SerializedProperty property ) {
             if ( type == typeof( Rect ) || type == typeof( Bounds ) ) {
                 if ( GUI.Button( rect, "..." ) ) {
                     var wizard = ScriptableWizard.DisplayWizard<PropertyWizard>( "", "Close" );
-                    wizard.Property = GetPropertyFromType( type, property ).Copy();
+                    wizard.Property = Utilities.GetPropertyFromType( type, property ).Copy();
                     wizard.Callback = OnPropertyWizardClose;
                 }
             } else if ( type.IsEnum ) {
 
             } else {
-                var prop = GetPropertyFromType( type, property );
+                var prop = Utilities.GetPropertyFromType( type, property );
                 if ( prop != null ) {
                     if ( type == typeof( Quaternion ) ) {
                         var euler = prop.quaternionValue.eulerAngles;
@@ -451,63 +401,8 @@ namespace TNRD.ExtendedEvent {
             propertyWizardValue = value;
         }
 
-        private void SetPropertyValue( SerializedProperty property, PropertyWizardValue value ) {
-            var prop = property.serializedObject.FindProperty( value.Path );
-            switch ( value.Type ) {
-                case SerializedPropertyType.Generic:
-                    break;
-                case SerializedPropertyType.Integer:
-                    prop.intValue = (int)value.Value;
-                    break;
-                case SerializedPropertyType.Boolean:
-                    prop.boolValue = (bool)value.Value;
-                    break;
-                case SerializedPropertyType.Float:
-                    prop.floatValue = (float)value.Value;
-                    break;
-                case SerializedPropertyType.String:
-                    prop.stringValue = (string)value.Value;
-                    break;
-                case SerializedPropertyType.Color:
-                    prop.colorValue = (Color)value.Value;
-                    break;
-                case SerializedPropertyType.ObjectReference:
-                    prop.objectReferenceValue = (Object)value.Value;
-                    break;
-                case SerializedPropertyType.LayerMask:
-                    break;
-                case SerializedPropertyType.Enum:
-                    break;
-                case SerializedPropertyType.Vector2:
-                    prop.vector2Value = (Vector2)value.Value;
-                    break;
-                case SerializedPropertyType.Vector3:
-                    prop.vector3Value = (Vector3)value.Value;
-                    break;
-                case SerializedPropertyType.Vector4:
-                    prop.vector4Value = (Vector4)value.Value;
-                    break;
-                case SerializedPropertyType.Rect:
-                    prop.rectValue = (Rect)value.Value;
-                    break;
-                case SerializedPropertyType.ArraySize:
-                    break;
-                case SerializedPropertyType.Character:
-                    break;
-                case SerializedPropertyType.AnimationCurve:
-                    prop.animationCurveValue = (AnimationCurve)value.Value;
-                    break;
-                case SerializedPropertyType.Bounds:
-                    prop.boundsValue = (Bounds)value.Value;
-                    break;
-                case SerializedPropertyType.Gradient:
-                    break;
-                case SerializedPropertyType.Quaternion:
-                    prop.quaternionValue = (Quaternion)value.Value;
-                    break;
-                default:
-                    break;
-            }
+        private void OnParameterWizardClose( ParameterWizardValue value ) {
+            parameterWizardValue = value;
         }
     }
 }
