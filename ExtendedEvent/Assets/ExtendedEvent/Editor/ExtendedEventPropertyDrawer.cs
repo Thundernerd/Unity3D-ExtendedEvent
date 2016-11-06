@@ -171,8 +171,10 @@ namespace TNRD.ExtendedEvent {
 
         public override void OnGUI( Rect position, SerializedProperty property, GUIContent label ) {
             if ( propertyWizardValue != null ) {
-                Utilities.SetPropertyValue( property, propertyWizardValue );
-                propertyWizardValue = null;
+                var p = property.serializedObject.FindProperty( propertyWizardValue.Path );
+                var type = propertyWizardValue.Type;
+                var pw = propertyWizardValue.Object.FindProperty( "Value" );
+                Utilities.CopyValue( Utilities.GetPropertyFromType( type, pw ), p, type );
             } else if ( parameterWizardValue != null ) {
                 var p = property.serializedObject.FindProperty( parameterWizardValue.Path );
                 for ( int i = 0; i < parameterWizardValue.Objects.Count; i++ ) {
@@ -340,7 +342,9 @@ namespace TNRD.ExtendedEvent {
             if ( type == typeof( Rect ) || type == typeof( Bounds ) ) {
                 if ( GUI.Button( rect, "..." ) ) {
                     var wizard = ScriptableWizard.DisplayWizard<PropertyWizard>( "", "Close" );
-                    wizard.Property = Utilities.GetPropertyFromType( type, property ).Copy();
+                    wizard.Type = type;
+                    wizard.Property = property.Copy();
+                    wizard.Path = property.propertyPath;
                     wizard.Callback = OnPropertyWizardClose;
                 }
             } else if ( type.IsEnum ) {

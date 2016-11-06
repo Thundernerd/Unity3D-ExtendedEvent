@@ -117,65 +117,6 @@ namespace TNRD.ExtendedEvent {
             }
         }
 
-        public static void SetPropertyValue( SerializedProperty property, PropertyWizardValue value ) {
-            var prop = property.serializedObject.FindProperty( value.Path );
-            switch ( value.Type ) {
-                case SerializedPropertyType.Generic:
-                    break;
-                case SerializedPropertyType.Integer:
-                    prop.intValue = (int)value.Value;
-                    break;
-                case SerializedPropertyType.Boolean:
-                    prop.boolValue = (bool)value.Value;
-                    break;
-                case SerializedPropertyType.Float:
-                    prop.floatValue = (float)value.Value;
-                    break;
-                case SerializedPropertyType.String:
-                    prop.stringValue = (string)value.Value;
-                    break;
-                case SerializedPropertyType.Color:
-                    prop.colorValue = (Color)value.Value;
-                    break;
-                case SerializedPropertyType.ObjectReference:
-                    prop.objectReferenceValue = (Object)value.Value;
-                    break;
-                case SerializedPropertyType.LayerMask:
-                    break;
-                case SerializedPropertyType.Enum:
-                    break;
-                case SerializedPropertyType.Vector2:
-                    prop.vector2Value = (Vector2)value.Value;
-                    break;
-                case SerializedPropertyType.Vector3:
-                    prop.vector3Value = (Vector3)value.Value;
-                    break;
-                case SerializedPropertyType.Vector4:
-                    prop.vector4Value = (Vector4)value.Value;
-                    break;
-                case SerializedPropertyType.Rect:
-                    prop.rectValue = (Rect)value.Value;
-                    break;
-                case SerializedPropertyType.ArraySize:
-                    break;
-                case SerializedPropertyType.Character:
-                    break;
-                case SerializedPropertyType.AnimationCurve:
-                    prop.animationCurveValue = (AnimationCurve)value.Value;
-                    break;
-                case SerializedPropertyType.Bounds:
-                    prop.boundsValue = (Bounds)value.Value;
-                    break;
-                case SerializedPropertyType.Gradient:
-                    break;
-                case SerializedPropertyType.Quaternion:
-                    prop.quaternionValue = (Quaternion)value.Value;
-                    break;
-                default:
-                    break;
-            }
-        }
-
         public static object GetPropertyValue( SerializedProperty property ) {
             switch ( property.propertyType ) {
                 case SerializedPropertyType.Generic:
