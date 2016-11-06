@@ -11,8 +11,6 @@ namespace TNRD.ExtendedEvent {
     [CustomPropertyDrawer( typeof( global::ExtendedEvent ), true )]
     public class ExtendedEventPropertyDrawer : PropertyDrawer {
 
-        private static Dictionary<System.Type, Members> AllMembers = new Dictionary<System.Type, Members>();
-
         private class State {
             public ReorderableList reorderableList;
             public int lastSelectedIndex;
@@ -28,14 +26,52 @@ namespace TNRD.ExtendedEvent {
                 }
 
                 if ( target is GameObject ) {
+                    var labels = new List<string>();
+                    var components = ( (GameObject)target ).GetComponents<Component>();
+                    foreach ( var item in components ) {
+                        var type = item.GetType();
 
+                        var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
+                        var fields = type.GetFields( flags )
+                            .Where( f => f.GetCustomAttributes( typeof( System.ObsoleteAttribute ), true ).Length == 0 )
+                            .ToList();
+                        var properties = type.GetProperties( flags )
+                            .Where( p => p.CanWrite )
+                            .Where( p => p.GetCustomAttributes( typeof( System.ObsoleteAttribute ), true ).Length == 0 )
+                            .ToList();
+                        var methods = type.GetMethods( flags )
+                            .Where( m => !m.Name.StartsWith( "get_" ) && !m.Name.StartsWith( "set_" ) )
+                            .Where( m => m.GetCustomAttributes( typeof( System.ObsoleteAttribute ), true ).Length == 0 )
+                            .ToList();
+
+                        foreach ( var field in fields ) {
+                            Infos.Add( field );
+                            labels.Add( string.Format( "{0}/Fields/{1} {2}",
+                                type.Name,
+                                GetTypeName( field.FieldType ),
+                                ObjectNames.NicifyVariableName( field.Name ) ) );
+                        }
+
+                        foreach ( var property in properties ) {
+                            Infos.Add( property );
+                            labels.Add( string.Format( "{0}/Properties/{1} {2}",
+                                type.Name,
+                                GetTypeName( property.PropertyType ),
+                                ObjectNames.NicifyVariableName( property.Name ) ) );
+                        }
+
+                        foreach ( var method in methods ) {
+                            Infos.Add( method );
+                            labels.Add( string.Format( "{0}/Methods/{1}({2})",
+                                type.Name,
+                                method.Name,
+                                GetParameters( method ) ) );
+                        }
+                    }
+
+                    Labels = labels.ToArray();
                 } else {
                     var type = target.GetType();
-                    if ( AllMembers.ContainsKey( type ) ) {
-                        Infos = AllMembers[type].Infos;
-                        Labels = AllMembers[type].Labels;
-                        return;
-                    }
 
                     var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
                     var fields = type.GetFields( flags )
@@ -74,8 +110,6 @@ namespace TNRD.ExtendedEvent {
                     }
 
                     Labels = labels.ToArray();
-
-                    AllMembers.Add( type, this );
                 }
             }
 
@@ -175,6 +209,7 @@ namespace TNRD.ExtendedEvent {
                 var type = propertyWizardValue.Type;
                 var pw = propertyWizardValue.Object.FindProperty( "Value" );
                 Utilities.CopyValue( Utilities.GetPropertyFromType( type, pw ), p, type );
+                propertyWizardValue = null;
             } else if ( parameterWizardValue != null ) {
                 var p = property.serializedObject.FindProperty( parameterWizardValue.Path );
                 for ( int i = 0; i < parameterWizardValue.Objects.Count; i++ ) {
