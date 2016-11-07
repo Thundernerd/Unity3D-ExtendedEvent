@@ -325,7 +325,7 @@ namespace TNRD.ExtendedEvent {
                         }
 
                         if ( GUI.Button( valueRect, "..." ) ) {
-                            var wizard = ScriptableWizard.DisplayWizard<ParameterWizard>( "Parameters", "Close" );
+                            var wizard = ScriptableWizard.DisplayWizard<ParameterWizard>( "Parameters", "Save" );
                             wizard.Parameters = parameters;
                             wizard.Property = valuesProperty.Copy();
                             wizard.Path = valuesProperty.propertyPath;
@@ -352,7 +352,7 @@ namespace TNRD.ExtendedEvent {
             paramsProperty.ClearArray();
 
             var mem = members.Infos[index];
-            declaringProperty.stringValue = mem.Name;
+            declaringProperty.stringValue = mem.DeclaringType.Name;
             if ( mem is FieldInfo ) {
                 typeProperty.intValue = 1;
                 nameProperty.stringValue = ( (FieldInfo)mem ).FieldType.AssemblyQualifiedName;
@@ -378,7 +378,7 @@ namespace TNRD.ExtendedEvent {
         private void DrawMember( Rect rect, System.Type type, SerializedProperty property ) {
             if ( type == typeof( Rect ) || type == typeof( Bounds ) ) {
                 if ( GUI.Button( rect, "..." ) ) {
-                    var wizard = ScriptableWizard.DisplayWizard<PropertyWizard>( "", "Close" );
+                    var wizard = ScriptableWizard.DisplayWizard<PropertyWizard>( "", "Save" );
                     wizard.Type = type;
                     wizard.Property = property.Copy();
                     wizard.Path = property.propertyPath;
