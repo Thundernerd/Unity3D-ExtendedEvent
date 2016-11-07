@@ -348,16 +348,18 @@ namespace TNRD.ExtendedEvent {
             var nameProperty = property.FindPropertyRelative( "Name" );
             var countProperty = property.FindPropertyRelative( "Parameters" );
             var paramsProperty = property.FindPropertyRelative( "ParameterTypes" );
+            var declaringProperty = property.FindPropertyRelative( "DeclaringType" );
             paramsProperty.ClearArray();
 
             var mem = members.Infos[index];
+            declaringProperty.stringValue = mem.Name;
             if ( mem is FieldInfo ) {
                 typeProperty.intValue = 1;
-                nameProperty.stringValue = mem.Name;
+                nameProperty.stringValue = ( (FieldInfo)mem ).FieldType.AssemblyQualifiedName;
                 countProperty.intValue = 0;
             } else if ( mem is PropertyInfo ) {
                 typeProperty.intValue = 2;
-                nameProperty.stringValue = mem.Name;
+                nameProperty.stringValue = ( (PropertyInfo)mem ).PropertyType.AssemblyQualifiedName;
                 countProperty.intValue = 0;
             } else if ( mem is MethodInfo ) {
                 typeProperty.intValue = 3;
@@ -368,7 +370,7 @@ namespace TNRD.ExtendedEvent {
                 for ( int i = 0; i < parameters.Length; i++ ) {
                     var par = parameters[i];
                     paramsProperty.InsertArrayElementAtIndex( i );
-                    paramsProperty.GetArrayElementAtIndex( i ).stringValue = par.ParameterType.FullName;
+                    paramsProperty.GetArrayElementAtIndex( i ).stringValue = par.ParameterType.AssemblyQualifiedName;
                 }
             }
         }

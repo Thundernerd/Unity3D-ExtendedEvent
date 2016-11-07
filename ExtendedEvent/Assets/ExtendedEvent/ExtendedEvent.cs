@@ -36,6 +36,7 @@ public sealed class ExtendedEvent {
     [Serializable]
     public class MemberInfo {
         public int Type;
+        public string DeclaringType;
         public string Name;
         public int Parameters;
         public string[] ParameterTypes;
