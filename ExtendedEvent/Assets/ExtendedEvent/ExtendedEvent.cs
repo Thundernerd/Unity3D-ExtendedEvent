@@ -5,6 +5,28 @@ using UnityEngine;
 [Serializable]
 public sealed class ExtendedEvent {
 
+    public enum PropertyType {
+        Generic = -1,
+        Integer = 0,
+        Boolean = 1,
+        Float = 2,
+        String = 3,
+        Color = 4,
+        ObjectReference = 5,
+        LayerMask = 6,
+        Enum = 7,
+        Vector2 = 8,
+        Vector3 = 9,
+        Vector4 = 10,
+        Rect = 11,
+        ArraySize = 12,
+        Character = 13,
+        AnimationCurve = 14,
+        Bounds = 15,
+        Gradient = 16,
+        Quaternion = 17
+    }
+
     [Serializable]
     public class Container {
         public UnityEngine.Object Target;
@@ -15,6 +37,7 @@ public sealed class ExtendedEvent {
 
     [Serializable]
     public class Value {
+        public PropertyType Type;
         public AnimationCurve animationCurveValue;
         public bool boolValue;
         public Bounds boundsValue;
@@ -31,6 +54,56 @@ public sealed class ExtendedEvent {
         public Vector2 vector2Value;
         public Vector3 vector3Value;
         public Vector4 vector4Value;
+
+        public object GetValue() {
+            switch ( Type ) {
+                case PropertyType.Generic:
+                    // ?
+                    break;
+                case PropertyType.Integer:
+                    return intValue;
+                case PropertyType.Boolean:
+                    return boolValue;
+                case PropertyType.Float:
+                    return floatValue;
+                case PropertyType.String:
+                    return stringValue;
+                case PropertyType.Color:
+                    return colorValue;
+                case PropertyType.ObjectReference:
+                    return objectReferenceValue;
+                case PropertyType.LayerMask:
+                    // ?
+                    break;
+                case PropertyType.Enum:
+                    // Still to figure out
+                    break;
+                case PropertyType.Vector2:
+                    return vector2Value;
+                case PropertyType.Vector3:
+                    return vector3Value;
+                case PropertyType.Vector4:
+                    return vector4Value;
+                case PropertyType.Rect:
+                    return rectValue;
+                case PropertyType.ArraySize:
+                    // ?
+                    break;
+                case PropertyType.Character:
+                    // ?
+                    break;
+                case PropertyType.AnimationCurve:
+                    return animationCurveValue;
+                case PropertyType.Bounds:
+                    return boundsValue;
+                case PropertyType.Gradient:
+                    break;
+                case PropertyType.Quaternion:
+                    return quaternionValue;
+            }
+
+            return null;
+        }
     }
 
     [Serializable]
@@ -45,7 +118,7 @@ public sealed class ExtendedEvent {
     private List<Action> callbacks = new List<Action>();
 
     [SerializeField]
-    private List<Container> persistentCallbacks;
+    private List<Container> persistentCallbacks = new List<Container>();
 
     public void AddListener( Action callback ) {
         callbacks.Add( callback );
@@ -79,15 +152,7 @@ public sealed class ExtendedEvent {
         }
     }
 
-    private void InvokeField( Container item ) {
-
-    }
-
-    private void InvokeProperty( Container item ) {
-
-    }
-
-    private void InvokeMethod( Container item ) {
+    private UnityEngine.Object GetTarget( Container item ) {
         var target = item.Target;
         if ( target is GameObject ) {
             target = ( (GameObject)target ).GetComponent( item.Info.DeclaringType );
@@ -95,9 +160,40 @@ public sealed class ExtendedEvent {
 
         if ( target == null ) {
             Debug.Log( "Component not found" );
+            return null;
+        }
+
+        return target;
+    }
+
+    private void InvokeField( Container item ) {
+        var target = GetTarget( item );
+        var type = target.GetType();
+
+        var field = type.GetField( item.Info.Name );
+        if ( field == null ) {
+            Debug.Log( "Field not found" );
             return;
         }
 
+        field.SetValue( target, item.Values[0].GetValue() );
+    }
+
+    private void InvokeProperty( Container item ) {
+        var target = GetTarget( item );
+        var type = target.GetType();
+
+        var property = type.GetProperty( item.Info.Name );
+        if ( property == null ) {
+            Debug.Log( "Property not found" );
+            return;
+        }
+
+        property.SetValue( target, item.Values[0].GetValue(), null );
+    }
+
+    private void InvokeMethod( Container item ) {
+        var target = GetTarget( item );
         var type = target.GetType();
 
         var types = new Type[item.Info.Parameters];
