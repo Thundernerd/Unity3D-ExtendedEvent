@@ -353,17 +353,15 @@ namespace TNRD.ExtendedEvent {
 
             var mem = members.Infos[index];
             declaringProperty.stringValue = mem.DeclaringType.Name;
+            nameProperty.stringValue = mem.Name;
             if ( mem is FieldInfo ) {
                 typeProperty.intValue = 1;
-                nameProperty.stringValue = ( (FieldInfo)mem ).FieldType.AssemblyQualifiedName;
                 countProperty.intValue = 0;
             } else if ( mem is PropertyInfo ) {
                 typeProperty.intValue = 2;
-                nameProperty.stringValue = ( (PropertyInfo)mem ).PropertyType.AssemblyQualifiedName;
                 countProperty.intValue = 0;
             } else if ( mem is MethodInfo ) {
                 typeProperty.intValue = 3;
-                nameProperty.stringValue = mem.Name;
                 var method = (MethodInfo)mem;
                 var parameters = method.GetParameters();
                 countProperty.intValue = parameters.Length;
@@ -376,6 +374,8 @@ namespace TNRD.ExtendedEvent {
         }
 
         private void DrawMember( Rect rect, System.Type type, SerializedProperty property ) {
+            var prop = Utilities.GetPropertyFromType( type, property );
+
             if ( type == typeof( Rect ) || type == typeof( Bounds ) ) {
                 if ( GUI.Button( rect, "..." ) ) {
                     var wizard = ScriptableWizard.DisplayWizard<PropertyWizard>( "", "Save" );
@@ -387,7 +387,6 @@ namespace TNRD.ExtendedEvent {
             } else if ( type.IsEnum ) {
 
             } else {
-                var prop = Utilities.GetPropertyFromType( type, property );
                 if ( prop != null ) {
                     if ( type == typeof( Quaternion ) ) {
                         var euler = prop.quaternionValue.eulerAngles;
@@ -402,6 +401,10 @@ namespace TNRD.ExtendedEvent {
                     EditorGUI.HelpBox( rect, "Type not supported", MessageType.Warning );
                 }
             }
+
+            var typeProperty = property.FindPropertyRelative( "Type" );
+            // This is kinda dangerous I guess
+            typeProperty.enumValueIndex = ((int)prop.propertyType) + 1;
         }
 
         private void RemoveButton( ReorderableList list ) {
