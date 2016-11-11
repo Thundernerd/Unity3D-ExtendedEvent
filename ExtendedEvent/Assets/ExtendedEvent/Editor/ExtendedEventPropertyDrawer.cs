@@ -250,10 +250,10 @@ namespace TNRD.ExtendedEvent {
             if ( property.objectReferenceValue == null )
                 return null;
             var mems = new Members( property.objectReferenceValue );
-            if ( members.Count > index )
-                members[index] = mems;
-            else
-                members.Insert( index, mems );
+            while ( members.Count <= index ) {
+                members.Insert( members.Count, null );
+            }
+            members[index] = mems;
             return mems;
         }
 
