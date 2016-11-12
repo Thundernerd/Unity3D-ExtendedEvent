@@ -168,6 +168,10 @@ public sealed class ExtendedEvent {
 
     private void InvokeField( Container item ) {
         var target = GetTarget( item );
+        if ( target == null ) {
+            return;
+        }
+
         var type = target.GetType();
 
         var field = type.GetField( item.Info.Name );
@@ -181,6 +185,10 @@ public sealed class ExtendedEvent {
 
     private void InvokeProperty( Container item ) {
         var target = GetTarget( item );
+        if ( target == null ) {
+            return;
+        }
+
         var type = target.GetType();
 
         var property = type.GetProperty( item.Info.Name );
@@ -194,6 +202,10 @@ public sealed class ExtendedEvent {
 
     private void InvokeMethod( Container item ) {
         var target = GetTarget( item );
+        if ( target == null ) {
+            return;
+        }
+
         var type = target.GetType();
 
         var types = new Type[item.Info.Parameters];
