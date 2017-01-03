@@ -159,7 +159,7 @@ public sealed class ExtendedEvent {
         }
 
         if ( target == null ) {
-            Debug.Log( "Component not found" );
+            Debug.LogWarningFormat( "Component ({0}) not found on {1}", item.Info.DeclaringType, item.Target.name );
             return null;
         }
 
@@ -176,7 +176,7 @@ public sealed class ExtendedEvent {
 
         var field = type.GetField( item.Info.Name );
         if ( field == null ) {
-            Debug.Log( "Field not found" );
+            Debug.LogWarningFormat( "Field ({0}) not found on {1}", item.Info.Name, target.name );
             return;
         }
 
@@ -193,7 +193,7 @@ public sealed class ExtendedEvent {
 
         var property = type.GetProperty( item.Info.Name );
         if ( property == null ) {
-            Debug.Log( "Property not found" );
+            Debug.LogWarningFormat( "Property ({0}) not found on {1}", item.Info.Name, target.name );
             return;
         }
 
@@ -216,7 +216,7 @@ public sealed class ExtendedEvent {
         var method = type.GetMethod( item.Info.Name, types );
 
         if ( method == null ) {
-            Debug.Log( "Method not found" );
+            Debug.LogWarningFormat( "Method ({0}) not found on {1}", item.Info.Name, target.name );
             return;
         }
 
