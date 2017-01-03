@@ -124,51 +124,6 @@ namespace TNRD.ExtendedEvent {
                     break;
             }
         }
-
-        public static object GetPropertyValue( SerializedProperty property ) {
-            switch ( property.propertyType ) {
-                case SerializedPropertyType.Generic:
-                    break;
-                case SerializedPropertyType.Integer:
-                    return property.intValue;
-                case SerializedPropertyType.Boolean:
-                    return property.boolValue;
-                case SerializedPropertyType.Float:
-                    return property.floatValue;
-                case SerializedPropertyType.String:
-                    return property.stringValue;
-                case SerializedPropertyType.Color:
-                    return property.colorValue;
-                case SerializedPropertyType.ObjectReference:
-                    return property.objectReferenceValue;
-                case SerializedPropertyType.LayerMask:
-                    break;
-                case SerializedPropertyType.Enum:
-                    break;
-                case SerializedPropertyType.Vector2:
-                    return property.vector2Value;
-                case SerializedPropertyType.Vector3:
-                    return property.vector3Value;
-                case SerializedPropertyType.Vector4:
-                    return property.vector4Value;
-                case SerializedPropertyType.Rect:
-                    return property.rectValue;
-                case SerializedPropertyType.ArraySize:
-                    break;
-                case SerializedPropertyType.Character:
-                    break;
-                case SerializedPropertyType.AnimationCurve:
-                    return property.animationCurveValue;
-                case SerializedPropertyType.Bounds:
-                    return property.boundsValue;
-                case SerializedPropertyType.Gradient:
-                    break;
-                case SerializedPropertyType.Quaternion:
-                    return property.quaternionValue;
-            }
-
-            return null;
-        }
     }
 }
 
