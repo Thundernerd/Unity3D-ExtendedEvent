@@ -27,8 +27,7 @@ namespace TNRD.ExtendedEvent {
                     serializedList.Add( new SerializedObject( fakeList[i] ) );
                     var type = Parameters[i].ParameterType;
                     var element = Property.GetArrayElementAtIndex( i );
-                    var prop = Utilities.GetPropertyFromType( type, element );
-                    Utilities.CopyValue( prop, serializedList[i].FindProperty( "Value" ), type );
+                    Utilities.CopyValue( element, serializedList[i].FindProperty( "Value" ), type );
                 }
             }
 
@@ -36,7 +35,27 @@ namespace TNRD.ExtendedEvent {
                 var par = Parameters[i];
                 var prop = serializedList[i].FindProperty( "Value" );
                 var p = Utilities.GetPropertyFromType( par.ParameterType, prop );
-                EditorGUILayout.PropertyField( p, new GUIContent( par.Name ), false );
+
+                if ( par.ParameterType.IsEnum ) {
+                    var type = par.ParameterType;
+                    var eType = prop.FindPropertyRelative( "enumType" );
+                    eType.stringValue = type.AssemblyQualifiedName;
+                    var enumObj = Enum.ToObject( type, p.intValue );
+                    EditorGUI.BeginChangeCheck();
+                    var e = EditorGUILayout.EnumPopup( new GUIContent( p.name ), (Enum)enumObj );
+                    if ( EditorGUI.EndChangeCheck() ) {
+                        var values = Enum.GetValues( type );
+                        var eStringValue = e.ToString();
+                        for ( int j = 0; j < values.Length; j++ ) {
+                            var eValue = values.GetValue( j );
+                            if ( eValue.ToString() == eStringValue ) {
+                                p.intValue = j;
+                            }
+                        }
+                    }
+                } else {
+                    EditorGUILayout.PropertyField( p, new GUIContent( par.Name ), false );
+                }
             }
 
             return true;
@@ -49,6 +68,11 @@ namespace TNRD.ExtendedEvent {
                 Path = Path
             } );
         }
+
+        private void OnLostFocus() {
+            Close();
+        }
+
     }
 }
 #endif

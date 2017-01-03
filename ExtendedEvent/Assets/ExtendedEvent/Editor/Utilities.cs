@@ -56,15 +56,22 @@ namespace TNRD.ExtendedEvent {
             return IsUnityObject( type.BaseType );
         }
 
-        public static void CopyValue( SerializedProperty from, SerializedProperty element, System.Type type ) {
+        public static void CopyValue( SerializedProperty fromElement, SerializedProperty toElement, System.Type type ) {
+            var from = GetPropertyFromType( type, fromElement );
             if ( from == null ) return;
 
-            var to = GetPropertyFromType( type, element );
+            var to = GetPropertyFromType( type, toElement );
             switch ( from.propertyType ) {
                 case SerializedPropertyType.Generic:
                     break;
-                case SerializedPropertyType.Integer:
-                    to.intValue = from.intValue;
+                case SerializedPropertyType.Integer: {
+                        to.intValue = from.intValue;
+                        if ( type.IsEnum ) {
+                            var toTypeProperty = toElement.FindPropertyRelative( "enumType" );
+                            var fromTypeProperty = fromElement.FindPropertyRelative( "enumType" );
+                            toTypeProperty.stringValue = fromTypeProperty.stringValue;
+                        }
+                    }
                     break;
                 case SerializedPropertyType.Boolean:
                     to.boolValue = from.boolValue;
@@ -84,6 +91,7 @@ namespace TNRD.ExtendedEvent {
                 case SerializedPropertyType.LayerMask:
                     break;
                 case SerializedPropertyType.Enum:
+                    to.intValue = from.intValue;
                     break;
                 case SerializedPropertyType.Vector2:
                     to.vector2Value = from.vector2Value;

@@ -208,7 +208,7 @@ namespace TNRD.ExtendedEvent {
                 var p = property.serializedObject.FindProperty( propertyWizardValue.Path );
                 var type = propertyWizardValue.Type;
                 var pw = propertyWizardValue.Object.FindProperty( "Value" );
-                Utilities.CopyValue( Utilities.GetPropertyFromType( type, pw ), p, type );
+                Utilities.CopyValue( pw, p, type );
                 propertyWizardValue = null;
             } else if ( parameterWizardValue != null ) {
                 var p = property.serializedObject.FindProperty( parameterWizardValue.Path );
@@ -216,7 +216,7 @@ namespace TNRD.ExtendedEvent {
                     var element = p.GetArrayElementAtIndex( i );
                     var value = parameterWizardValue.Objects[i].FindProperty( "Value" );
                     var type = parameterWizardValue.Parameters[i].ParameterType;
-                    Utilities.CopyValue( Utilities.GetPropertyFromType( type, value ), element, type );
+                    Utilities.CopyValue( value, element, type );
                 }
                 parameterWizardValue = null;
             }
@@ -385,7 +385,23 @@ namespace TNRD.ExtendedEvent {
                     wizard.Callback = OnPropertyWizardClose;
                 }
             } else if ( type.IsEnum ) {
+                var eTypeProperty = property.FindPropertyRelative( "enumType" );
+                eTypeProperty.stringValue = type.AssemblyQualifiedName;
 
+                var enumObj = System.Enum.ToObject( type, prop.intValue );
+
+                EditorGUI.BeginChangeCheck();
+                var e = EditorGUI.EnumPopup( rect, (System.Enum)enumObj );
+                if ( EditorGUI.EndChangeCheck() ) {
+                    var values = System.Enum.GetValues( type );
+                    var eStringValue = e.ToString();
+                    for ( int i = 0; i < values.Length; i++ ) {
+                        var eValue = values.GetValue( i );
+                        if ( eValue.ToString() == eStringValue ) {
+                            prop.intValue = i;
+                        }
+                    }
+                }
             } else {
                 if ( prop != null ) {
                     if ( type == typeof( Quaternion ) ) {
@@ -403,8 +419,8 @@ namespace TNRD.ExtendedEvent {
             }
 
             var typeProperty = property.FindPropertyRelative( "Type" );
-            // This is kinda dangerous I guess
-            typeProperty.enumValueIndex = ((int)prop.propertyType) + 1;
+            typeProperty.enumValueIndex = ( type.IsEnum ? (int)SerializedPropertyType.Enum : (int)prop.propertyType ) + 1;
+
         }
 
         private void RemoveButton( ReorderableList list ) {
@@ -443,10 +459,12 @@ namespace TNRD.ExtendedEvent {
 
         private void OnPropertyWizardClose( PropertyWizardValue value ) {
             propertyWizardValue = value;
+            EditorUtility.SetDirty( prop.serializedObject.targetObject );
         }
 
         private void OnParameterWizardClose( ParameterWizardValue value ) {
             parameterWizardValue = value;
+            EditorUtility.SetDirty( prop.serializedObject.targetObject );
         }
     }
 }

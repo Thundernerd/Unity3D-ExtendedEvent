@@ -43,7 +43,8 @@ public sealed class ExtendedEvent {
         public Bounds boundsValue;
         public Color colorValue;
         public double doubleValue;
-        public Enum enumValue;
+        public string enumType;
+        public int enumValue;
         public float floatValue;
         public int intValue;
         public long longValue;
@@ -57,9 +58,6 @@ public sealed class ExtendedEvent {
 
         public object GetValue() {
             switch ( Type ) {
-                case PropertyType.Generic:
-                    // ?
-                    break;
                 case PropertyType.Integer:
                     return intValue;
                 case PropertyType.Boolean:
@@ -75,9 +73,11 @@ public sealed class ExtendedEvent {
                 case PropertyType.LayerMask:
                     // ?
                     break;
-                case PropertyType.Enum:
-                    // Still to figure out
-                    break;
+                case PropertyType.Enum: {
+                        var eType = System.Type.GetType( enumType );
+                        var value = Enum.ToObject( eType, enumValue );
+                        return value;
+                    }
                 case PropertyType.Vector2:
                     return vector2Value;
                 case PropertyType.Vector3:
@@ -247,7 +247,9 @@ public sealed class ExtendedEvent {
         } else if ( IsUnityObject( type ) ) {
             return value.objectReferenceValue;
         } else if ( type.IsEnum ) {
-
+            var eType = Type.GetType( value.enumType );
+            var eValue = Enum.ToObject( eType, value.enumValue );
+            return eValue;
         } else if ( type == typeof( Vector2 ) ) {
             return value.vector2Value;
         } else if ( type == typeof( Vector3 ) ) {
